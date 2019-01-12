@@ -7,3 +7,14 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+
+.vscode
+
+*.user
+*.autosave
+
+doc/*.aux
+doc/*.log
+doc/*.pdf
+doc/*.synctex.gz
+doc/*.toc

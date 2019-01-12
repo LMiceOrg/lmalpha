@@ -1,0 +1,67 @@
+% !TeX root = ./lmapi.tex
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+%\documentclass[10pt, a4paper]{article}
+\documentclass[11pt]{book}
+% fontawesome
+\usepackage{fontawesome}
+\usepackage{fontspec,xltxtra,xunicode}
+
+\usepackage{xeCJK}
+%设置中文字体
+\setCJKmainfont{STHeitiSC-Light}   % 设置缺省中文字体
+\setCJKmonofont{STHeitiSC-Light}   % 设置等宽字体
+%设置英文字体
+\setmainfont{ArialMT}   % 英文衬线字体
+\setmonofont{Monaco}   % 英文等宽字体
+
+\defaultfontfeatures{Mapping=tex-text}
+\XeTeXlinebreaklocale “zh”
+\XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt  %文章内中文自动换行
+
+
+
+\title{LMAPI使用手册}
+\author{何浩 hehaoslj@sina.com}
+
+\begin{document}
+%\maketitle
+\begin{titlepage}
+{\large    第一版}
+{\normalsize ver 1.0}
+
+\vspace*{\fill}
+
+\begin{center}
+{\Huge\bfseries
+LMAPI使用手册}
+
+\bigskip
+{\Large\itshape
+何浩 hehaolsj@sina.com}
+
+\medskip
+\today
+\end{center}
+\vspace{\stretch{3}}
+\end{titlepage}
+
+\tableofcontents
+
+\part[设计]{LMAPI库设计与原理}
+\chapter{简介}
+
+LMAPI库是用于辅助研究员与开发员设计验证与编程实现Alpha策略而设计的一套函数库。主要代码为C++语言实现，依据C++11、C90标准。
+    \chapter{设计原理}
+    状态机
+    \chapter{总体设计}
+    \chapter{详细设计}
+    \section{库初始化接口API}
+    \section{控制台日志API}
+    \section{配置文件读取API}
+    \section{时间序列读取API}
+    \section{SQL数据库查询API}
+    \section{结构存储API}
+\part[用例]{LMAPI库使用样例}
+    \chapter{简单示例}
+\end{document}
