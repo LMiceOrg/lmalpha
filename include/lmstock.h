@@ -8,7 +8,7 @@
 struct lmtickdata {
   // 股票代码
   int nStockCode;
-  // 时间 格式HHMMSS
+  // 时间 格式HHMMSS000
   int Time;
   // 买盘有效价格为几档，代表buyPriceS数组中前几位有效
   int buyLevel;
@@ -21,20 +21,24 @@ struct lmtickdata {
   double HighPrice;  // 最高价
   double LowPrice;   // 最低价
 
-  // 成交量
+  double TradeCount;             // 成交笔数
+  double TotalBidVolume;         // 申买总量
+  double WeightedAvgBidPrice;    // 申买加权均价
+  double TotalOfferVolume;       // 申卖总量
+  double WeightedAvgOfferPrice;  // 申卖加权均价
+
+  double buyPriceS[10];   //十档买单价格
+  double buyVolumeS[10];  //十档买单量
+  double buyCountS[10];   //十档买单笔数
+
+  double sellPriceS[10];  //十档卖单价格
+  double sellVolume[10];  //十档卖单量
+  double sellCountS[10];  //十档卖单笔数
+
+  //成交量
   double Volume;
-  // 成交金额
+  //成交金额
   double Amount;
-
-  // 买盘 改为向量化
-  // PriceLevel buyPriceS[10];
-  double buyPriceS[10];
-  double buyVolumes[10];
-
-  // 卖盘 改为向量化
-  // PriceLevel sellPriceS[10];
-  double sellPriceS[10];
-  double sellVolumeS[10];
 };
 
 struct lmkdata {
