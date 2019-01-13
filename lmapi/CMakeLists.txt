@@ -35,3 +35,28 @@ ADD_LIBRARY(lmapi SHARED ${lmapi_src})
 target_link_libraries(lmapi  json_static_lib ${unixodbc_LDFLAGS} eal_static ${xml2_LDFLAGS})
 target_include_directories(lmapi PUBLIC ${unixodbc_INCLUDE_DIRS} ${xml2_INCLUDE_DIRS})
 target_compile_options(lmapi PUBLIC ${json_CFLAGS_OTHER} ${unixodbc_CFLAGS_OTHER})
+
+
+LIST( APPEND config_file "lmalpha.json"
+    "lmalpha.xml")
+#add_custom_command(TARGET lmapi  POST_BUILD
+#  COMMAND echo "Generating alpha framework config file."
+#  COMMAND ${CMAKE_COMMAND} -E copy ${config_file} "${CMAKE_BINARY_DIR}/${config_file}"
+#  COMMENT  "Preparing example/lmalpha depends..."
+# )
+
+add_custom_command(
+    TARGET lmapi POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E tar cfj ${CMAKE_BINARY_DIR}/temp.tar ${config_file}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../example
+    COMMENT  "Preparing example/lmalpha depends..."
+)
+
+add_custom_command(
+    TARGET lmapi POST_BUILD
+    #COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/temp.tar temp.tar
+    COMMAND ${CMAKE_COMMAND} -E tar xfj temp.tar ${FileList}
+    COMMAND ${CMAKE_COMMAND} -E remove temp.tar
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+
+)

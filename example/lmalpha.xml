@@ -1,0 +1,16 @@
+<root>
+	<rawtick rootPath="E:/RawTick/"/>
+	<KData rootPath="E:/KData/" > 
+		<min_120  filename="Min_120.kdata"/>
+		<min_60   filename="Min_60.kdata"/>
+		<min_30  filename="Min_30.kdata"/>
+		<min_15  filename="Min_15.kdata"/>
+		<min_5  filename="Min_5.kdata"/>
+		<min_1  filename="Min_1.kdata"/> 
+	</KData>
+    <SqlDSN>
+        Driver={ODBC Driver 17 for SQL Server};
+        Server=192.168.2.106;
+        Uid=alpha_master;Pwd=alpha_master;Connect Timeout=60;
+    </SqlDSN>
+</root>

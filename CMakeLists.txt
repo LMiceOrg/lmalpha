@@ -57,6 +57,13 @@ INCLUDE_DIRECTORIES(thirdpart/call_thunk)
 
 INCLUDE_DIRECTORIES(include)
 
+LIST(APPEND cfg_files example/lmalpha.xml
+    example/lmalpha.json
+    example/factor_test/factor_cfg.json
+)
+add_custom_target(example ALL SOURCES  ${cfg_files})
+
+
 
 add_subdirectory(lmagent)
 add_subdirectory(lmlib)

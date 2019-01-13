@@ -2,11 +2,10 @@
 #define _INCLUDE_LMJSON_H_
 
 #include <string>
+#include <vector>
 
 /** jansson lib */
 #include <jansson.h>
-
-
 
 namespace lmapi {
 
@@ -55,6 +54,61 @@ static inline void get_json_float(json_t* root, const std::string& key,
   }
 }
 
+static inline void get_json_array_string(json_t* root, const std::string& key,
+                                         std::vector<std::string>* vec) {
+  size_t size;
+  json_t* obj;
+  json_t* item;
+
+  obj = obj_get(root, key);
+  if (json_is_array(obj)) {
+    size = json_array_size(obj);
+    for (size_t i = 0; i < size; ++i) {
+      item = json_array_get(obj, i);
+      if (json_is_string(item)) {
+        vec->push_back(json_string_value(item));
+      }
+    }
+  }
+}
+
+template <class T>
+static inline void get_json_array_int(json_t* root, const std::string& key,
+                                      std::vector<T>* vec) {
+  size_t size;
+  json_t* obj;
+  json_t* item;
+
+  obj = obj_get(root, key);
+  if (json_is_array(obj)) {
+    size = json_array_size(obj);
+    for (size_t i = 0; i < size; ++i) {
+      item = json_array_get(obj, i);
+      if (json_is_integer(item)) {
+        vec->push_back(json_integer_value(item));
+      }
+    }
+  }
+}
+
+template <class T>
+static inline void get_json_array_float(json_t* root, const std::string& key,
+                                        std::vector<T>* vec) {
+  size_t size;
+  json_t* obj;
+  json_t* item;
+
+  obj = obj_get(root, key);
+  if (json_is_array(obj)) {
+    size = json_array_size(obj);
+    for (size_t i = 0; i < size; ++i) {
+      item = json_array_get(obj, i);
+      if (json_is_real(item)) {
+        vec->push_back(json_real_value(item));
+      }
+    }
+  }
+}
 
 }  // namespace lmapi
 

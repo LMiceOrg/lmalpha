@@ -10,3 +10,10 @@ ADD_LIBRARY(factor_test SHARED ${factor_test_src})
 
 target_link_libraries(factor_test lmapi)
 target_include_directories(factor_test PUBLIC ../../lmapi)
+
+set(config_file "factor_cfg.json")
+add_custom_command(TARGET factor_test  POST_BUILD
+  COMMAND echo "Generating factor config file."
+  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${config_file}" "${CMAKE_BINARY_DIR}/${config_file}"
+  COMMENT  "Preparing example/factor_test depends..."
+ )

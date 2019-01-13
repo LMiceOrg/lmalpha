@@ -1,30 +1,101 @@
 /** Copyright 2018 He Hao<hehaoslj@sina.com> */
 
+#include <sstream>
+
 #include "lmapi.h"
 #include "lmjson.h"
+#include "lmxml.h"
 namespace lmapi {
 
 struct config_internal {
   json_t* root;
   std::string name;
-};
+  xmlDocPtr doc;
+  // 1:xml 2:json
+  int type;
+  enum config_type { xml_type, json_type };
+
+  config_internal(const std::string& name_) : name(name_) {
+    json_error_t err;
+
+    if (name.find(".xml", 0) != name.npos) {
+      doc = xml_open(name, "utf-8");
+      type = xml_type;
+    } else {
+      root = json_load_file(name.c_str(), 0, &err);
+      type = json_type;
+    }
+  }
+
+  ~config_internal() {
+    if (type == xml_type) {
+      xmlFreeDoc(doc);
+    } else {
+      /** close json */
+      json_decrefp(&(root));
+    }
+  }
+
+  template <class T>
+  void get_int(const std::string& name, T* t) {
+    if (type == xml_type) {
+      get_xml_integer(doc, name, t);
+    } else {
+      get_json_integer(root, name, t);
+    }
+  }
+
+  template <class T>
+  void get_float(const std::string& name, T* t) {
+    double val = 0;
+    if (type == xml_type) {
+      get_xml_float(doc, name, &val);
+    } else {
+      get_json_float(root, name, &val);
+    }
+    *t = val;
+  }
+
+  void get_string(const std::string& name, std::string* val) {
+    if (type == xml_type) {
+      *val = get_xml_val(doc, name);
+    } else {
+      get_json_string(root, name, *val);
+    }
+  }
+
+  void get_array_string(const std::string& name,
+                        std::vector<std::string>* vec) {
+    if (type == xml_type) {
+      get_xml_array_string(doc, name, vec);
+    } else {
+      get_json_array_string(root, name, vec);
+    }
+  }
+  template <class T>
+  void get_array_int(const std::string& name, std::vector<T>* vec) {
+    if (type == xml_type) {
+      get_xml_array_int(doc, name, vec);
+    } else {
+      get_json_array_int(root, name, vec);
+    }
+  }
+
+  template <class T>
+  void get_array_float(const std::string& name, std::vector<T>* vec) {
+    if (type == xml_type) {
+      get_xml_array_float(doc, name, vec);
+    } else {
+      get_json_array_float(root, name, vec);
+    }
+  }
+
+};  // config_internal
 
 config::config(const std::string& name) : pdata(NULL) {
   config_internal* cfg = NULL;
-  json_t* root = NULL;
-  json_error_t err;
-  // printf("cfg name %s\n", name.c_str());
-  /** Load json conf */
-  root = json_load_file(name.c_str(), 0, &err);
-  if (root == NULL) {
-    return;
-  }
 
-  // printf("load file\n");
-
-  cfg = new config_internal;
-  cfg->root = root;
-  cfg->name = name;
+  cfg = new config_internal(name);
 
   pdata = cfg;
 }
@@ -33,11 +104,20 @@ config::~config() {
   config_internal* cfg;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return;
 
-  /** close json */
-  json_decrefp(&(cfg->root));
   delete cfg;
+}
+
+bool config::is_open() const {
+  config_internal* cfg;
+
+  cfg = reinterpret_cast<config_internal*>(pdata);
+  if (cfg->type == cfg->xml_type && cfg->doc != nullptr) {
+    return true;
+  } else if (cfg->type == cfg->json_type && cfg->root != nullptr) {
+    return true;
+  }
+  return false;
 }
 
 /** value */
@@ -46,9 +126,7 @@ int config::get_int(const std::string& name) {
   int result;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
-
-  get_json_integer(cfg->root, name, &result);
+  cfg->get_int(name, &result);
   return result;
 }
 
@@ -57,9 +135,7 @@ int64_t config::get_int64(const std::string& name) {
   int64_t result;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
-
-  get_json_integer(cfg->root, name, &result);
+  cfg->get_int(name, &result);
   return result;
 }
 
@@ -68,9 +144,9 @@ float config::get_float(const std::string& name) {
   float result;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  get_json_float(cfg->root, name, &result);
+  cfg->get_float(name, &result);
+
   return result;
 }
 
@@ -79,9 +155,8 @@ double config::get_double(const std::string& name) {
   double result;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  get_json_float(cfg->root, name, &result);
+  cfg->get_float(name, &result);
   return result;
 }
 
@@ -90,124 +165,60 @@ std::string config::get_string(const std::string& name) {
   std::string result;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return result;
 
-  get_json_string(cfg->root, name, result);
+  cfg->get_string(name, &result);
+
   return result;
 }
 
 /** array */
-int config::get_array_size(const std::string& name) {
+std::vector<int> config::get_array_int(const std::string& name) {
+  std::vector<int> result;
   config_internal* cfg;
-  json_t* obj;
-  int result = 0;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  obj = obj_get(cfg->root, name);
-  if (json_is_array(obj)) {
-    result = json_array_size(obj);
-  }
-
+  cfg->get_array_int(name, &result);
   return result;
 }
 
-int config::get_array_int(const std::string& name, int idx) {
+std::vector<int64_t> config::get_array_int64(const std::string& name) {
+  std::vector<int64_t> result;
   config_internal* cfg;
-  json_t* obj;
-  json_t* item;
-  int result = 0;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  obj = obj_get(cfg->root, name);
-  if (json_is_array(obj)) {
-    item = json_array_get(obj, idx);
-    if (json_is_integer(item)) {
-      result = json_integer_value(item);
-    }
-  }
-
-  return result;
-}
-int64_t config::get_array_int64(const std::string& name, int idx) {
-  config_internal* cfg;
-  json_t* obj;
-  json_t* item;
-  int64_t result = 0;
-
-  cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
-
-  obj = obj_get(cfg->root, name);
-  if (json_is_array(obj)) {
-    item = json_array_get(obj, idx);
-    if (json_is_integer(item)) {
-      result = json_integer_value(item);
-    }
-  }
-
+  cfg->get_array_int(name, &result);
   return result;
 }
 
-float config::get_array_float(const std::string& name, int idx) {
+std::vector<float> config::get_array_float(const std::string& name) {
+  std::vector<float> result;
   config_internal* cfg;
-  json_t* obj;
-  json_t* item;
-  float result = 0;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  obj = obj_get(cfg->root, name);
-  if (json_is_array(obj)) {
-    item = json_array_get(obj, idx);
-    if (json_is_real(item)) {
-      result = json_real_value(item);
-    }
-  }
-
+  cfg->get_array_float(name, &result);
   return result;
 }
 
-double config::get_array_float64(const std::string& name, int idx) {
+std::vector<double> config::get_array_float64(const std::string& name) {
+  std::vector<double> result;
   config_internal* cfg;
-  json_t* obj;
-  json_t* item;
-  double result = 0;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  obj = obj_get(cfg->root, name);
-  if (json_is_array(obj)) {
-    item = json_array_get(obj, idx);
-    if (json_is_real(item)) {
-      result = json_real_value(item);
-    }
-  }
-
+  cfg->get_array_float(name, &result);
   return result;
 }
-std::string config::get_array_string(const std::string& name, int idx) {
+
+std::vector<std::string> config::get_array_string(const std::string& name) {
+  std::vector<std::string> result;
   config_internal* cfg;
-  json_t* obj;
-  json_t* item;
-  std::string result;
 
   cfg = reinterpret_cast<config_internal*>(pdata);
-  if (!cfg) return 0;
 
-  obj = obj_get(cfg->root, name);
-  if (json_is_array(obj)) {
-    item = json_array_get(obj, idx);
-    if (json_is_string(item)) {
-      result = json_string_value(item);
-    }
-  }
-
+  cfg->get_array_string(name, &result);
   return result;
 }
 

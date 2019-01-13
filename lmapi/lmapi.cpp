@@ -21,7 +21,7 @@
 
 #endif
 
-#define LMAPI_CONFIG_NAME "lmalpha.xml"
+#define LMAPI_CONFIG_NAME "lmalpha"
 
 static void GetExectuableFileName(char* buf, int* len) {
 #if defined(WIN32) || defined(WIN64)
@@ -128,17 +128,20 @@ static std::string get_kdata_file(const char* root, const char* instrument,
 /** c++ part */
 
 namespace lmapi {
+
+struct lmapi_internal {
+  std::string rtick_root;
+  std::string kdata_root;
+  std::string sql_dsn;
+};
+
 /** lmapi */
 lmapi::lmapi() {
-  /** lmapi configuration and initialization */
-  xmlDocPtr doc = 0;  //定义解析文档指针
-  xmlNodePtr root = 0;  //定义结点指针(你需要它为了在各个结点间移动)
-  xmlChar* value;  //临时字符串变量
+  std::string cfg_file;
   char path[1024];
   int len = 1024;
-  std::string svalue;
-  std::vector<std::string> rtick_list;
-  std::vector<std::string> kdata_list;
+
+  lmapi_internal* api = new lmapi_internal;
 
   /** 1. Get app path */
   memset(path, 0, sizeof(path));
@@ -151,63 +154,38 @@ lmapi::lmapi() {
   } else {
     str += LMAPI_CONFIG_NAME;
   }
-  printf("exe path:%s pos:%lu\n", str.c_str(), pos);
+  // printf("exe path:%s pos:%lu\n", str.c_str(), pos);
 
-  /** 2. to config path */
-  doc = xmlReadFile(str.c_str(), "UTF-8", XML_PARSE_RECOVER);  //解析文件
-  if (doc) root = xmlDocGetRootElement(doc);
-  if (root) {
-    xmlNodePtr node = root->xmlChildrenNode;  //获取子节点
-    while (node != NULL) {
-      if (!xmlStrcmp(node->name, (const xmlChar*)("KData"))) {
-        //查找属性
-        xmlAttrPtr attr = node->properties;
-        while (attr != NULL) {
-          if (0 == xmlStrcmp(attr->name, BAD_CAST "rootPath")) {
-            value = xmlGetProp(node, BAD_CAST "rootPath");
-            svalue = (char*)value;
-            kdata_list.push_back(svalue);
-            xmlFree(value);
-            break;  // break while: attr
-
-            attr = attr->next;
-          }  //  while: attr
-        }
-
-      } else if (0 == xmlStrcmp(node->name, BAD_CAST "rawtick")) {
-        //查找属性
-        xmlAttrPtr attr = node->properties;
-        while (attr != NULL) {
-          if (0 == xmlStrcmp(attr->name, BAD_CAST "rootPath")) {
-            value = xmlGetProp(node, BAD_CAST "rootPath");
-            svalue = (char*)value;
-            rtick_list.push_back(svalue);
-            xmlFree(value);
-            break;  // break while: attr
-
-            attr = attr->next;
-          }  //  while: attr
-        }
-      }
-
-      node = node->next;
-    }  // while: node
+  /** 2. get xml config */
+  cfg_file = str + ".xml";
+  auto cfg = config_open(cfg_file);
+  if (cfg->is_open()) {
+    // printf("cfg %s\n", cfg_file.c_str());
+    api->rtick_root = cfg->get_string("root.rawtick.rootPath");
+    api->kdata_root = cfg->get_string("root.KData.rootPath");
+    api->sql_dsn = cfg->get_string("root.SqlDSN");
+    // printf("dsn = %s\n", api->sql_dsn.c_str());
   }
 
-  for (size_t i = 0; i < rtick_list.size(); ++i)
-    printf("rawtick root = %s\n", rtick_list[i].c_str());
-  for (size_t i = 0; i < kdata_list.size(); ++i)
-    printf("kdata root = %s\n", kdata_list[i].c_str());
-  printf("get 600123 120min kdata = ");
-  svalue = get_kdata_file(kdata_list[0].c_str(), "600123", lmkdata::Min_120);
-  printf("%s\n", svalue.c_str());
-  printf("get 600123 20170412 rawtick = ");
-  svalue = get_rtick_file(rtick_list[0].c_str(), "600123", 20170412);
-  printf("%s\n", svalue.c_str());
+  cfg_file = str + ".json";
+  cfg = config_open(cfg_file);
+  if (cfg->is_open()) {
+    // printf("cfg %s\n", cfg_file.c_str());
+    if (api->rtick_root.empty())
+      api->rtick_root = cfg->get_string("root.rawtick.rootPath");
+    if (api->kdata_root.empty())
+      api->kdata_root = cfg->get_string("root.KData.rootPath");
+    if (api->sql_dsn.empty()) api->sql_dsn = cfg->get_string("root.SqlDSN");
+  }
 
-  if (doc) xmlFreeDoc(doc);
+  pdata = api;
 }
-lmapi::~lmapi() {}
+
+lmapi::~lmapi() {
+  lmapi_internal* api;
+  api = reinterpret_cast<lmapi_internal*>(pdata);
+  delete api;
+}
 
 /** config */
 config* lmapi::config_open(const std::string& name) {
@@ -232,13 +210,18 @@ void lmapi::console_close(console* con) { delete con; }
 #define LMAPI_DSN                           \
   "Driver={ODBC Driver 17 for SQL Server};" \
   "Server=192.168.2.106;"                   \
-  "UId=jydb;Pwd=jydb;"                      \
-  "Connect Timeout=2;";
+  "Uid=alpha_master;Pwd=alpha_master;"
+
+//"Connect Timeout=60;";
 
 sql_dataset* lmapi::sql_open(const std::string& query) {
   std::string dsn;
-  dsn = LMAPI_DSN;
+  lmapi_internal* api;
+
+  api = reinterpret_cast<lmapi_internal*>(pdata);
+  dsn = api->sql_dsn;
   sql_dataset* ds = new sql_dataset(dsn, query);
+  // printf("query:%s\n", query.c_str());
   return ds;
 }
 
@@ -246,12 +229,25 @@ void lmapi::sql_close(sql_dataset* ds) { delete ds; }
 
 /** result store */
 factor_result* lmapi::result_open(const std::string& factor_name) {
-  std::string dsn = LMAPI_DSN;
+  std::string dsn;
+  lmapi_internal* api;
+
+  api = reinterpret_cast<lmapi_internal*>(pdata);
+  dsn = api->sql_dsn;
   factor_result* ds = new factor_result(dsn, factor_name);
   return ds;
 }
 
 void lmapi::result_close(factor_result* ds) { delete ds; }
+
+/** data load */
+serial_dataset* lmapi::serial_open(const std::string& instrument, int tp,
+                                   int start_date, int end_date) {
+  serial_dataset* ds = new serial_dataset(tp, instrument, start_date, end_date);
+  return ds;
+}
+
+void lmapi::serial_close(serial_dataset* ds) { delete ds; }
 
 }  // namespace lmapi
 

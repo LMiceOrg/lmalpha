@@ -1,0 +1,16 @@
+{
+    "factor":{
+        "name": "自定义KDJ因子"
+        ,"author":"何浩 <hehaoslj>"
+        ,"date":"2019-1-9"
+    }
+    ,"testing":{
+        "start_date":"2017-1-1"
+        ,"end_date":"2018-1-1"
+        ,"instruments":["000001", "600001"]
+        ,"data_type":"5min"
+        ,"data_length":20
+        ,"data_step":"day"
+    }
+
+}

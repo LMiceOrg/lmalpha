@@ -1,0 +1,21 @@
+{
+    "BasicInfo":{
+        "FactorName":"Test",
+        "date":"2019-1-12",
+        "author":"ly-alpha"
+    },
+    "BackTest":{
+        "nBeginDate":20170101,
+        "nEndDate":20181231,
+        "StockList":[
+            1,2,3,
+            603999
+        ],
+        "IndexList":[
+            300
+        ]
+    },
+    "Storage":{
+        "FacotorTableName": "TestFactor"
+    }
+}

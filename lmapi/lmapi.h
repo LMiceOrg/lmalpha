@@ -135,6 +135,9 @@ class config {
   friend class lmapi;
 
   ~config();
+
+  bool is_open() const;
+
   /** value */
   int get_int(const std::string& name);
   int64_t get_int64(const std::string& name);
@@ -143,12 +146,11 @@ class config {
   std::string get_string(const std::string& name);
 
   /** array */
-  int get_array_size(const std::string& name);
-  int get_array_int(const std::string& name, int idx);
-  int64_t get_array_int64(const std::string& name, int idx);
-  float get_array_float(const std::string& name, int idx);
-  double get_array_float64(const std::string& name, int idx);
-  std::string get_array_string(const std::string& name, int idx);
+  std::vector<int> get_array_int(const std::string& name);
+  std::vector<int64_t> get_array_int64(const std::string& name);
+  std::vector<float> get_array_float(const std::string& name);
+  std::vector<double> get_array_float64(const std::string& name);
+  std::vector<std::string> get_array_string(const std::string& name);
 
  private:
   explicit config(const std::string& name);
@@ -196,8 +198,8 @@ class serial_dataset {
   ~serial_dataset();
 
  private:
-  serial_dataset(lmapi_data_type tp, const std::string& instrument,
-                 const std::string& start_date, const std::string& end_date);
+  serial_dataset(int tp, const std::string& instrument, int start_date,
+                 int end_date);
   void* pdata;
 };
 
@@ -231,12 +233,10 @@ class lmapi {
   console* console_open(int tp);
   void console_close(console* con);
 
-  // /** data load */
-  // serial_dataset* serial_open(const std::string& instrument, lmapi_data_type
-  // tp,
-  //                             const std::string& start_date,
-  //                             const std::string& end_date);
-  // void serial_close(serial_dataset* ds);
+  /** data load */
+  serial_dataset* serial_open(const std::string& instrument, int tp,
+                              int start_date, int end_date);
+  void serial_close(serial_dataset* ds);
 
   /** result store */
   factor_result* result_open(const std::string& factor_name);
@@ -245,6 +245,9 @@ class lmapi {
   /** sql query */
   sql_dataset* sql_open(const std::string& query);
   void sql_close(sql_dataset* ds);
+
+ private:
+  void* pdata;
 };
 
 }  // namespace lmapi

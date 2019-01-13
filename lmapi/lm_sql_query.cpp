@@ -18,7 +18,7 @@ sql_dataset::sql_dataset(const std::string& conns, const std::string& query) {
   if (ret != 0) {
     return;
   }
-
+  // printf("do query...\n");
   sql->select(query);
 }
 
