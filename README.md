@@ -17,3 +17,7 @@ cmake & make
 3 [libxml2](http://xmlsoft.org/index.html) ![LibXML2](http://xmlsoft.org/Libxml2-Logo-180x168.gif =64x32)
 
  libXML library version2.
+
+ 4 [gsl](https://www.gnu.org/software/gsl/) GNU Scientific Library
+
+ The GNU Scientific Library (GSL) is a collection of routines for numerical computing. The routines have been written from scratch in C, and present a modern Applications Programming Interface (API) for C programmers, allowing wrappers to be written for very high level languages.
