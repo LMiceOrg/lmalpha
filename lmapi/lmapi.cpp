@@ -49,82 +49,6 @@ static void GetExectuableFileName(char* buf, int* len) {
 #endif
 }
 
-static std::string get_rtick_file(const char* root, const char* instrument,
-                                  int date) {
-  std::string stype;
-  std::string value;
-#if defined(_WIN32)
-  char sep = '\\';
-#else
-  char sep = '/';
-#endif
-  char buf[1024];
-
-  // "\2019\0110\000070\20190110000070-L2_Tick"
-
-  value = root;
-  if (value.size() != 0) {
-    if (*(value.end() - 1) != sep) {
-      value += sep;
-    }
-  }
-  int year = date / 10000;
-  int yday = date % 10000;
-  memset(buf, 0, sizeof(buf));
-  snprintf(buf, sizeof(buf), "%s%04d%c%04d%c%s%c%08d%s-L2_tick", value.c_str(),
-           year, sep, yday, sep, instrument, sep, date, instrument);
-
-  value = buf;
-  return value;
-}
-static std::string get_kdata_file(const char* root, const char* instrument,
-                                  int type) {
-  std::string stype;
-  std::string value;
-#if defined(_WIN32)
-  char sep = '\\';
-#else
-  char sep = '/';
-#endif
-  char buf[1024];
-
-  //  root/instrument/instrument.Min_1.kdata
-
-  value = root;
-  if (value.size() != 0) {
-    if (*(value.end() - 1) != sep) {
-      value += sep;
-    }
-  }
-
-  switch (type) {
-    case lmkdata::Min_1:
-      stype = "Min_1";
-      break;
-    case lmkdata::Min_5:
-      stype = "Min_5";
-      break;
-    case lmkdata::Min_15:
-      stype = "Min_15";
-      break;
-    case lmkdata::Min_30:
-      stype = "Min_30";
-      break;
-    case lmkdata::Min_60:
-      stype = "Min_60";
-      break;
-    case lmkdata::Min_120:
-      stype = "Min_120";
-      break;
-  }
-  memset(buf, 0, sizeof(buf));
-  snprintf(buf, sizeof(buf), "%s%s%c%s.%s.kdata", value.c_str(), instrument,
-           sep, instrument, stype.c_str());
-
-  value = buf;
-  return value;
-}
-
 /** c++ part */
 
 namespace lmapi {
@@ -158,25 +82,24 @@ lmapi::lmapi() {
 
   /** 2. get xml config */
   cfg_file = str + ".xml";
-  auto cfg = config_open(cfg_file);
+  config* cfg = config_open(cfg_file);
   if (cfg->is_open()) {
-    // printf("cfg %s\n", cfg_file.c_str());
     api->rtick_root = cfg->get_string("root.rawtick.rootPath");
     api->kdata_root = cfg->get_string("root.KData.rootPath");
     api->sql_dsn = cfg->get_string("root.SqlDSN");
-    // printf("dsn = %s\n", api->sql_dsn.c_str());
   }
+  delete cfg;
 
   cfg_file = str + ".json";
   cfg = config_open(cfg_file);
   if (cfg->is_open()) {
-    // printf("cfg %s\n", cfg_file.c_str());
     if (api->rtick_root.empty())
       api->rtick_root = cfg->get_string("root.rawtick.rootPath");
     if (api->kdata_root.empty())
       api->kdata_root = cfg->get_string("root.KData.rootPath");
     if (api->sql_dsn.empty()) api->sql_dsn = cfg->get_string("root.SqlDSN");
   }
+  delete cfg;
 
   pdata = api;
 }
@@ -241,9 +164,19 @@ factor_result* lmapi::result_open(const std::string& factor_name) {
 void lmapi::result_close(factor_result* ds) { delete ds; }
 
 /** data load */
-serial_dataset* lmapi::serial_open(const std::string& instrument, int tp,
-                                   int start_date, int end_date) {
-  serial_dataset* ds = new serial_dataset(tp, instrument, start_date, end_date);
+serial_dataset* lmapi::serial_open(const std::vector<std::string>& instrument,
+                                   int tp, int start_date, int end_date) {
+  lmapi_internal* api;
+
+  api = reinterpret_cast<lmapi_internal*>(pdata);
+  serial_dataset* ds;
+  if (tp == LMAPI_TICK_TYPE) {
+    ds = new serial_dataset(api->rtick_root, instrument, tp, start_date,
+                            end_date);
+  } else {
+    ds = new serial_dataset(api->kdata_root, instrument, tp, start_date,
+                            end_date);
+  }
   return ds;
 }
 

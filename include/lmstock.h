@@ -42,17 +42,7 @@ struct lmtickdata {
 };
 
 struct lmkdata {
-  enum eKType {
-    Min_1,
-    Min_5,
-    Min_15,
-    Min_30,
-    Min_60,
-    Min_120,
-    DayK,
-  };
-
-  eKType nType;
+  int nType;
   int nCode;
 
   int nDate;       // yyyymmdd

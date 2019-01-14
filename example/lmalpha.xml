@@ -1,6 +1,6 @@
 <root>
-	<rawtick rootPath="E:/RawTick/"/>
-	<KData rootPath="E:/KData/" > 
+    <rawtick rootPath="/Users/hehao/Desktop/fe/alpha/data/rawtick"/>
+    <KData rootPath="/Users/hehao/Desktop/fe/alpha/data/kdata" >
 		<min_120  filename="Min_120.kdata"/>
 		<min_60   filename="Min_60.kdata"/>
 		<min_30  filename="Min_30.kdata"/>
