@@ -6,13 +6,13 @@
     },
     "BackTest":{
         "nBeginDate":20170101,
-        "nEndDate":20181231,
+        "nEndDate":20190211,
         "StockList":[
-            1,2,3,
-            603999
+            "603861",
+            "603999"
         ],
         "IndexList":[
-            300
+            "000300"
         ]
     },
     "Storage":{
