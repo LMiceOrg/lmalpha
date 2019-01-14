@@ -1,3 +1,5 @@
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
+
 #include <cstdarg>
 #include <sstream>
 
@@ -32,8 +34,8 @@ struct console_internal {
   printf(t);                                                         \
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),           \
                           lmice_trace_name[LMICE_TRACE_NONE].color);
-inline void console_write(console_internal* con, const char* time_str, int type,
-                          const char* buff) {
+inline void console_write(console_internal *con, const char *time_str, int type,
+                          const char *buff) {
 #if defined(_WIN32)
   switch (con->type) {
     case LMAPI_LOG_DATETIME:
@@ -105,7 +107,7 @@ inline void console_write(console_internal* con, const char* time_str, int type,
   }
 #endif
 }
-inline void time_string(console_internal* con, std::string& tstr) {
+inline void time_string(console_internal *con, std::string &tstr) {
   std::string format = "%4d-%02d-%02d %02d:%02d:%02d.%07lld";
   int64_t now;
   time_t tnow;
@@ -141,7 +143,7 @@ inline void time_string(console_internal* con, std::string& tstr) {
   tstr = buff;
 }
 
-inline void console_logging(console_internal* con, int type, const char* buff) {
+inline void console_logging(console_internal *con, int type, const char *buff) {
   int64_t tid;
   std::string tname;
   std::string tstr;
@@ -151,7 +153,7 @@ inline void console_logging(console_internal* con, int type, const char* buff) {
     time_string(con, tstr);
   }
 
-  tid = reinterpret_cast<int64_t>(reinterpret_cast<void*>(eal_gettid()));
+  tid = reinterpret_cast<int64_t>(reinterpret_cast<void *>(eal_gettid()));
   if (tid != con->tid) {
     char name[128] = {0};
     std::ostringstream os;
@@ -195,7 +197,7 @@ inline void console_logging(console_internal* con, int type, const char* buff) {
 
 console::console(int tp) : pdata(NULL) {
   std::ostringstream os;
-  console_internal* con;
+  console_internal *con;
   char name[128] = {0};
 
   con = new console_internal;
@@ -203,7 +205,7 @@ console::console(int tp) : pdata(NULL) {
   get_system_time(&con->begin_time);
   con->count = 0;
   con->pid = getpid();
-  con->tid = reinterpret_cast<int64_t>(reinterpret_cast<void*>(eal_gettid()));
+  con->tid = reinterpret_cast<int64_t>(reinterpret_cast<void *>(eal_gettid()));
   os << "0x" << std::hex << con->tid;
   con->thread_name = os.str();
   pthread_getname_np(pthread_self(), name, 127);
@@ -237,17 +239,17 @@ console::console(int tp) : pdata(NULL) {
 }
 
 console::~console() {
-  console_internal* con;
+  console_internal *con;
 
-  con = reinterpret_cast<console_internal*>(pdata);
+  con = reinterpret_cast<console_internal *>(pdata);
   if (con) {
     delete con;
     pdata = NULL;
   }
 }
 
-void console::debug(const char* format, ...) {
-  console_internal* con;
+void console::debug(const char *format, ...) {
+  console_internal *con;
 
   std::string type = "\033[1;36mDEBUG\033[0m";
 
@@ -257,14 +259,14 @@ void console::debug(const char* format, ...) {
   vsprintf(buff, format, va);
   va_end(va);
 
-  con = reinterpret_cast<console_internal*>(pdata);
+  con = reinterpret_cast<console_internal *>(pdata);
   if (!con) return;
 
   console_logging(con, LMICE_TRACE_DEBUG, buff);
 }
 
-void console::info(const char* format, ...) {
-  console_internal* con;
+void console::info(const char *format, ...) {
+  console_internal *con;
 
   std::string type = "\033[1;32mINFO\033[0m";
 
@@ -274,14 +276,14 @@ void console::info(const char* format, ...) {
   vsprintf(buff, format, va);
   va_end(va);
 
-  con = reinterpret_cast<console_internal*>(pdata);
+  con = reinterpret_cast<console_internal *>(pdata);
   if (!con) return;
 
   console_logging(con, LMICE_TRACE_INFO, buff);
 }
 
-void console::warning(const char* format, ...) {
-  console_internal* con;
+void console::warning(const char *format, ...) {
+  console_internal *con;
 
   std::string type = "\033[1;33mWARNING\033[0m";
 
@@ -291,14 +293,14 @@ void console::warning(const char* format, ...) {
   vsprintf(buff, format, va);
   va_end(va);
 
-  con = reinterpret_cast<console_internal*>(pdata);
+  con = reinterpret_cast<console_internal *>(pdata);
   if (!con) return;
 
   console_logging(con, LMICE_TRACE_WARNING, buff);
 }
 
-void console::critical(const char* format, ...) {
-  console_internal* con;
+void console::critical(const char *format, ...) {
+  console_internal *con;
 
   std::string type = "\033[1;35mCRITICAL\033[0m";
 
@@ -308,14 +310,14 @@ void console::critical(const char* format, ...) {
   vsprintf(buff, format, va);
   va_end(va);
 
-  con = reinterpret_cast<console_internal*>(pdata);
+  con = reinterpret_cast<console_internal *>(pdata);
   if (!con) return;
 
   console_logging(con, LMICE_TRACE_CRITICAL, buff);
 }
 
-void console::error(const char* format, ...) {
-  console_internal* con;
+void console::error(const char *format, ...) {
+  console_internal *con;
 
   std::string type = "\033[1;31mERROR\033[0m";
 
@@ -325,7 +327,7 @@ void console::error(const char* format, ...) {
   vsprintf(buff, format, va);
   va_end(va);
 
-  con = reinterpret_cast<console_internal*>(pdata);
+  con = reinterpret_cast<console_internal *>(pdata);
   if (!con) return;
 
   console_logging(con, LMICE_TRACE_ERROR, buff);

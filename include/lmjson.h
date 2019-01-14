@@ -1,11 +1,14 @@
-#ifndef _INCLUDE_LMJSON_H_
-#define _INCLUDE_LMJSON_H_
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
 
-#include <string>
-#include <vector>
+#ifndef INCLUDE_LMJSON_H_
+#define INCLUDE_LMJSON_H_
 
 /** jansson lib */
 #include <jansson.h>
+
+/** cpp lib */
+#include <string>
+#include <vector>
 
 namespace lmapi {
 
@@ -112,4 +115,4 @@ static inline void get_json_array_float(json_t* root, const std::string& key,
 
 }  // namespace lmapi
 
-#endif  //  _INCLUDE_LMJSON_H_
+#endif  //  INCLUDE_LMJSON_H_

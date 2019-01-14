@@ -11,8 +11,8 @@
 #include <gsl/gsl_multifit.h>
 #include <gsl/gsl_statistics_double.h>
 
-extern "C" LMAPI_EXPORT int lm(const double* y_val, const double* x_val,
-                               int y_size, int x_size) {
+extern "C" LMAPI_EXPORT int lmlm(const double* y_val, const double* x_val,
+                                 int y_size, int x_size, double* rsqured) {
   gsl_vector* y;
   gsl_matrix* x;
   gsl_vector* c;  // the coefficients
@@ -61,7 +61,11 @@ extern "C" LMAPI_EXPORT int lm(const double* y_val, const double* x_val,
   //    printf("ori %lf  y=%lf\n", y_val[i], r);
   //  }
   double tss = gsl_stats_tss(y_val, 1, n);
-  printf("chisq[%lf] rsquared:%lf \n", chisq, 1 - chisq / tss);
+  double rsq = 1 - chisq / tss;
+  // printf("chisq[%lf] rsquared:%lf \n", chisq, rsq);
+  if (rsqured) {
+    *rsqured = rsq;
+  }
 
   //  for (int i = 0; i < p; ++i) {
   //    for (int j = 0; j < p; ++j) {

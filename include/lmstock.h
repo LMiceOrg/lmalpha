@@ -1,7 +1,7 @@
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
+
 #ifndef INCLUDE_LMSTOCK_H_
 #define INCLUDE_LMSTOCK_H_
-
-/** Copyright 2018 He Hao<hehaoslj@sina.com> */
 
 #pragma pack(1)
 

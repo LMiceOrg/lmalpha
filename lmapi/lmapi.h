@@ -77,7 +77,7 @@ void* lmapi_data_load(lmapi_t api, enum lmapi_data_type tp,
 
 /** result store */
 struct lmapi_result_info {
-  char factor_name[64];
+  char factor_name[32];
   char factor_author[32];
   char factor_date[32];
 };
@@ -203,8 +203,8 @@ class serial_dataset {
   std::vector<lmtickdata> get_tick(const std::string& code);
   std::vector<lmkdata> get_kdata(const std::string& code);
 
-  std::vector<std::vector<lmtickdata> > get_ticks();
-  std::vector<std::vector<lmkdata> > get_kdatas();
+  std::vector<std::vector<lmtickdata>> get_ticks();
+  std::vector<std::vector<lmkdata>> get_kdatas();
 
  private:
   serial_dataset(const std::string& root,
@@ -220,8 +220,12 @@ class factor_result {
 
   const std::string& error() const;
 
+  void store(const std::vector<std::string>& stocks,
+             const std::vector<std::vector<lmapi_result_data>>& results);
+
   int store_factor(const lmapi_result_info& info);
-  int store_result(const std::vector<lmapi_result_data>& ds);
+  int store_result(const std::string& name, const std::string code,
+                   const std::vector<lmapi_result_data>& ds);
 
  private:
   explicit factor_result(const std::string& conns,

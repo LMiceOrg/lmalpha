@@ -10,7 +10,7 @@
 	</KData>
     <SqlDSN>
         Driver={ODBC Driver 17 for SQL Server};
-        Server=192.168.2.106;
+        Server=192.168.2.106;Database=alpha;QUALIFIER=alpha;
         Uid=alpha_master;Pwd=alpha_master;Connect Timeout=60;
     </SqlDSN>
 </root>
