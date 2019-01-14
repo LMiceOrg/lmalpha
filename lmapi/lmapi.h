@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#include "lmstock.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,6 +65,7 @@ enum lmapi_data_type {
   LMAPI_15MIN_TYPE,
   LMAPI_30MIN_TYPE,
   LMAPI_1HOUR_TYPE,
+  LMAPI_2HOUR_TYPE,
   LMAPI_1DAY_TYPE,
   LMAPI_3DAY_TYPE,
   LMAPI_1WEEK_TYPE,
@@ -197,9 +200,16 @@ class serial_dataset {
   friend class lmapi;
   ~serial_dataset();
 
+  std::vector<lmtickdata> get_tick(const std::string& code);
+  std::vector<lmkdata> get_kdata(const std::string& code);
+
+  std::vector<std::vector<lmtickdata> > get_ticks();
+  std::vector<std::vector<lmkdata> > get_kdatas();
+
  private:
-  serial_dataset(int tp, const std::string& instrument, int start_date,
-                 int end_date);
+  serial_dataset(const std::string& root,
+                 const std::vector<std::string>& instruments, int tp,
+                 int start_date, int end_date);
   void* pdata;
 };
 
@@ -234,8 +244,8 @@ class lmapi {
   void console_close(console* con);
 
   /** data load */
-  serial_dataset* serial_open(const std::string& instrument, int tp,
-                              int start_date, int end_date);
+  serial_dataset* serial_open(const std::vector<std::string>& instrument,
+                              int tp, int start_date, int end_date);
   void serial_close(serial_dataset* ds);
 
   /** result store */
