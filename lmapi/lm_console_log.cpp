@@ -21,6 +21,7 @@ struct console_internal {
 };
 
 /** helper */
+
 #define LMAPI_WIN_COLOR_TAG(type)                          \
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), \
                           lmice_trace_name[type].color);   \

@@ -72,22 +72,22 @@ struct serial_internal {
     }
 
     switch (type) {
-      case lmapi_data_type::LMAPI_1MIN_TYPE:
+      case LMAPI_1MIN_TYPE:
         stype = "Min_1";
         break;
-      case lmapi_data_type::LMAPI_5MIN_TYPE:
+      case LMAPI_5MIN_TYPE:
         stype = "Min_5";
         break;
-      case lmapi_data_type::LMAPI_15MIN_TYPE:
+      case LMAPI_15MIN_TYPE:
         stype = "Min_15";
         break;
-      case lmapi_data_type::LMAPI_30MIN_TYPE:
+      case LMAPI_30MIN_TYPE:
         stype = "Min_30";
         break;
-      case lmapi_data_type::LMAPI_1HOUR_TYPE:
+      case LMAPI_1HOUR_TYPE:
         stype = "Min_60";
         break;
-      case lmapi_data_type::LMAPI_2HOUR_TYPE:
+      case LMAPI_2HOUR_TYPE:
         stype = "Min_120";
         break;
     }

@@ -1,4 +1,6 @@
 /** Copyright 2018 He Hao<hehaoslj@sina.com> */
+#include <string.h>
+
 #include <algorithm>
 #include <functional>
 #include <string>
@@ -23,14 +25,14 @@
 
 #define LMAPI_CONFIG_NAME "lmalpha"
 
-static void GetExectuableFileName(char* buf, int* len) {
+static void GetExectuableFileName(char* buf, unsigned int* len) {
 #if defined(WIN32) || defined(WIN64)
-  GetModuleFileNameA(buf, len);
+  GetModuleFileNameA(NULL, buf, *len);
 
 #elif defined(__APPLE__)
-  unsigned int sz = *len;
-  _NSGetExecutablePath(buf, &sz);
-  *len = sz;
+
+  _NSGetExecutablePath(buf, len);
+
 
 #elif defined(UNIX)
   if (readlink("/proc/self/exe", buf, *len) == -1) path = buf;
@@ -63,7 +65,7 @@ struct lmapi_internal {
 lmapi::lmapi() {
   std::string cfg_file;
   char path[1024];
-  int len = 1024;
+  unsigned int len = 1024;
 
   lmapi_internal* api = new lmapi_internal;
 

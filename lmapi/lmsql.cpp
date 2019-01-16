@@ -1,9 +1,129 @@
 #include "lmsql.h"
+
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
+#if defined(_WIN32)
+#define WIN32_MEAN_AND_LEAN
+#include <Windows.h>
+
+int togbk(const wchar_t* in, char* out, int out_len) {
+  return WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, in, -1, out, out_len,
+                             NULL, FALSE);
+}
+
+#endif
+
 namespace lmapi {
+
+/** helper */
+static inline size_t utf16_size(const unsigned char* str) {
+  size_t pos = 0;
+  const unsigned short* p = reinterpret_cast<const unsigned short*>(str);
+  do {
+    if (*p != 0) {
+      p++;
+      pos++;
+    }
+  } while (*p != 0);
+
+  return pos;
+}
+
+static inline size_t utf16_size(const SQLTCHAR* str) {
+  const SQLTCHAR* p = str;
+  size_t pos = 0;
+  do {
+    if (*p != 0) {
+      p++;
+      pos++;
+    }
+  } while (*p != 0);
+
+  return pos;
+}
+static inline std::string utf16_utf8(iconv_t codec, const unsigned char* str) {
+  std::ostringstream oss;
+  char buff[1024];
+  char* in;
+  char* out;
+  size_t in_size;
+  size_t out_size = 1024;
+  size_t ret;
+  std::string utf8_string;
+
+  in = reinterpret_cast<char*>(const_cast<unsigned char*>(str));
+  in_size = utf16_size(str);
+  if (in_size < 256) {
+    in_size *= 2;
+    memset(buff, 0, 1024);
+    out = buff;
+    ret = iconv(codec, &in, &in_size, &out, &out_size);
+    utf8_string = buff;
+  } else {
+    out_size = in_size * 4;
+    in_size *= 2;
+    char* large_buff = (char*)malloc(out_size);
+    memset(large_buff, 0, out_size);
+    out = buff;
+    utf8_string = large_buff;
+    free(large_buff);
+  }
+
+  return utf8_string;
+}
+
+static inline std::string utf16_utf8(iconv_t codec, const SQLTCHAR* str) {
+  std::ostringstream oss;
+  char buff[1024];
+  char* in;
+  char* out;
+  size_t in_size;
+  size_t out_size = 1024;
+  size_t ret;
+  std::string utf8_string;
+
+  in = reinterpret_cast<char*>(const_cast<SQLTCHAR*>(str));
+  in_size = utf16_size(str);
+  if (in_size < 256) {
+    memset(buff, 0, 1024);
+    out = buff;
+    in_size *= 2;
+    ret = iconv(codec, &in, &in_size, &out, &out_size);
+    utf8_string = buff;
+  } else {
+    out_size = in_size * 4;
+    in_size *= 2;
+    char* large_buff = (char*)malloc(out_size);
+    memset(large_buff, 0, out_size);
+    out = buff;
+    utf8_string = large_buff;
+    free(large_buff);
+  }
+
+  return utf8_string;
+}
+
+static inline std::string exception_utf8(iconv_t codec,
+                                         const otl_exception& e) {
+  std::ostringstream oss;
+
+  oss << utf16_utf8(codec, e.msg) << "|" << e.stm_text << "|"
+      << utf16_utf8(codec, e.sqlstate) << "|" << e.var_info << "\n";
+
+  return oss.str();
+}
 
 sql_internal::sql_internal() {
   row_count = 0;
   col_count = 0;
+#if defined(_WIN32)
+  codec = iconv_open("GBK", "UTF-16LE");
+#else
+  codec = iconv_open("UTF-8", "UTF-16LE");
+#endif
 }
 
 sql_internal::~sql_internal() { disconnect(); }
@@ -15,17 +135,21 @@ int sql_internal::connect(const std::string& conn_string) {
   // 2. login
   try {
     // printf("db conn...\n");
+    //    std::vector<wchar_t> wcstring(conn_string.size() + 1, 0);
+    //    char* in = const_cast<char*>(conn_string.c_str());
+    //    char* out = reinterpret_cast<char*>(&wcstring[0]);
+    //    size_t in_size = conn_string.size();
+    //    size_t out_size = (wcstring.size() - 1) * sizeof(wchar_t);
+    //    iconv(codec, &in, &in_size, &out, &out_size);
     db.set_timeout(2);
     db.rlogon(conn_string.c_str());
-    // printf("db conned...\n");
+    // printf("db conned...\n");WC_NO_BEST_FIT_CHARS
     return 0;
 
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-    std::ostringstream os;
-    os << e.msg << "\t" << e.stm_text << "\t" << e.sqlstate << "\t"
-       << e.var_info << std::endl;
-    err_msg += os.str();
+    err_msg = exception_utf8(codec, e);
+
     return 1;
   }
 }
@@ -36,10 +160,7 @@ void sql_internal::disconnect(void) {
     db.logoff();
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-    std::ostringstream os;
-    os << e.msg << "\t" << e.stm_text << "\t" << e.sqlstate << "\t"
-       << e.var_info << std::endl;
-    err_msg += os.str();
+    err_msg = exception_utf8(codec, e);
   }
 }
 
@@ -97,10 +218,7 @@ void sql_internal::select(const std::string& query) {
 
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-    std::ostringstream os;
-    os << e.msg << "\t" << e.stm_text << "\t" << e.sqlstate << "\t"
-       << e.var_info << std::endl;
-    err_msg += os.str();
+    err_msg = exception_utf8(codec, e);
   }
 }
 
@@ -113,6 +231,7 @@ sql_variable sql_internal::read_var(otl_stream& os, const sql_column& column,
                                     otl_long_string* ostr) {
   sql_variable var;
   otl_datetime dt;
+  otl_long_unicode_string ustr;
 
   var.type = column.var_dbtype;
   // printf("%s\t%d\n", column.name, column.var_dbtype);
@@ -123,7 +242,8 @@ sql_variable sql_internal::read_var(otl_stream& os, const sql_column& column,
     case otl_var_char:
     case otl_var_varchar_long:
     case otl_var_long_string:
-      os >> var.str_var;
+      os >> ustr;
+      var.str_var = utf16_utf8(codec, ustr.v);
       break;
     case otl_var_double:
       os >> var.tdata.f64_var;
@@ -171,7 +291,7 @@ sql_variable sql_internal::read_var(otl_stream& os, const sql_column& column,
     case otl_var_db2date:
     case otl_var_db2time:
     default:
-      os >> var.str_var;
+      os >> ustr;
       break;
   }
 

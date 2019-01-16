@@ -2,6 +2,25 @@ cmake_minimum_required(VERSION 2.8)
 
 project(ALPHA)
 
+if(MINGW)
+    message("mingw ${PKG_CONFIG_PATH}")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -fexec-charset=utf-8")
+    #set(CMAKE_C_FLAGS "${CMAK_C_FLAGS}  -fexec-charset=utf-8")
+endif()
+
+message("compiler: ${CMAKE_CXX_COMPILER_ID}")
+
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU|Clang")
+    set(CMAKE_CXX_FLAGS "-Wall -DUNICODE -D_UNICODE -std=c++11 -march=native -mtune=native")
+    set(CMAKE_C_FLAGS   "-Wall -DUNICODE -D_UNICODE -std=c90 -march=native -mtune=native")
+
+    set(CMAKE_CXX_FLAGS "-Wall -DUNICODE -D_UNICODE -std=c++11 -march=native -mtune=native")
+    set(CMAKE_C_FLAGS   "-Wall -DUNICODE -D_UNICODE -std=c90 -march=native -mtune=native")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+endif()
+
+message("os: ${CMAKE_SYSTEM_NAME}")
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     #shared lib suffix
     set(dll_ext ".dylib")
@@ -9,10 +28,20 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     #Set osx rpath
     set( CMAKE_MACOSX_RPATH 1)
     set( MACOSX_RPATH "@executable_path")
+    #add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++11> $<$<COMPILE_LANGUAGE:C>:-std=c90>)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -fexec-charset=utf-8")
+    set(CMAKE_C_FLAGS "${CMAK_C_FLAGS}  -fexec-charset=utf-8")
+
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -fexec-charset=gb18030")
+ set(CMAKE_C_FLAGS "${CMAK_C_FLAGS}  -fexec-charset=gb18030")
 endif()
 
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++11> $<$<COMPILE_LANGUAGE:C>:-std=c90>)
+
+
 
 find_package(PkgConfig REQUIRED)
 
@@ -21,11 +50,11 @@ FIND_PATH(eal_header lmice_trace.h
 LIST(APPEND eal_SRCS
     #../fmtrader/eal/lmice_ring.c
     ../fmtrader/eal/lmice_trace.c
-    ../fmtrader/eal/lmice_eal_shm.c
-    ../fmtrader/eal/lmice_eal_hash.c
-    ../fmtrader/eal/lmice_eal_spinlock.c
-    ../fmtrader/eal/lmice_eal_malloc.c
-    ../fmtrader/eal/lmice_eal_event.c
+    #../fmtrader/eal/lmice_eal_shm.c
+    #../fmtrader/eal/lmice_eal_hash.c
+    #../fmtrader/eal/lmice_eal_spinlock.c
+    #../fmtrader/eal/lmice_eal_malloc.c
+    #../fmtrader/eal/lmice_eal_event.c
     ../fmtrader/eal/lmice_eal_time.c
     #../fmtrader/eal/lmice_core.c
     #../fmtrader/eal/lmice_eal_aio.c

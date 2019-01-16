@@ -9,7 +9,7 @@ LIST(APPEND factor_test_src factor_main.cpp)
 ADD_LIBRARY(factor_test SHARED ${factor_test_src})
 
 target_link_libraries(factor_test lmapi lmlib)
-target_include_directories(factor_test PUBLIC ../../lmapi)
+target_include_directories(factor_test PUBLIC ../../lmapi ../include)
 
 set(config_file "factor_cfg.json")
 add_custom_command(TARGET factor_test  POST_BUILD

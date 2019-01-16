@@ -1,16 +1,25 @@
+#include <locale.h>
 #include <stdio.h>
-#include <iostream>
+
 #include "../lmapi/lmapi.h"
 
+#include "lmice_eal_thread.h"
+
+#if defined(_WIN32)
+#define WIN32_MEAN_AND_LEAN
+#include <Windows.h>
+#else
 #include <dlfcn.h>
+#endif
 
 extern int lm_run_file(const char* name);
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
+  setlocale(LC_ALL, "");
+  if (argc != 3) {
     printf(
         "Usage:\n"
-        "  [app] [config file(json format)]\n"
+        "  [app] [dll file] [config file(json format)]\n"
         "\teg: lmagent test.json\n");
     return -1;
   }
@@ -89,11 +98,17 @@ int main(int argc, char** argv) {
 
     delete api;
   */
-  void* hdll = dlopen("libfactor_test.dylib", RTLD_LAZY);
 
   typedef void (*f_run)(const char* cfg);
+#if defined(_WIN32)
+  HMODULE hmod = LoadLibraryA(argv[1]);
+  f_run func = (f_run)GetProcAddress(hmod, "factor_run");
+#else
+  void* hdll = dlopen(argv[1], RTLD_LAZY);
   f_run func = (f_run)dlsym(hdll, "factor_run");
   pthread_setname_np("LMAPI-AGENT");
-  func(argv[1]);
+#endif
+
+  func(argv[2]);
   return 0;
 }

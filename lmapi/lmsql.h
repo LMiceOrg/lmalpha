@@ -3,14 +3,31 @@
 #include <string>
 #include <vector>
 
-#define OTL_ODBC  // Compile OTL 4.0/ODBC
-#define OTL_STL
+#define OTL_UNICODE  // Enable Unicode OTL for ODBC
+
+// Enable OTL Unicode rlogon and otl_exception for ODBC
+#define OTL_UNICODE_EXCEPTION_AND_RLOGON
+
+#if defined(__GNUC__)
+#define OTL_UNICODE_CHAR_TYPE SQLWCHAR
+#else
+#define OTL_UNICODE_CHAR_TYPE wchar_t
+#endif
+
+// OTL support bigint
 #define OTL_BIGINT int64_t
+
 #if defined(_WIN32)
+#define OTL_ODBC_MSSQL_2008  // Compile OTL 4/ODBC, MS SQL 2008
+//#define OTL_ODBC // Compile OTL 4/ODBC. Uncomment this when used with MS
+// SQL 7.0/ 2000
 #else
 #define OTL_ODBC_UNIX  // uncomment this line if UnixODBC is used
 #endif
+
 #include <otlv4.h>
+
+#include <iconv.h>
 
 namespace lmapi {
 union trival_data {
@@ -41,6 +58,7 @@ struct sql_internal {
   std::string err_msg;
   std::vector<sql_column> col_descs;
   std::vector<sql_variable> dataset;
+  iconv_t codec;
 
   sql_internal();
 
