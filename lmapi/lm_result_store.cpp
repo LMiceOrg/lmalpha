@@ -1,5 +1,6 @@
-#include "lmapi.h"
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
 
+#include "lmapi.h"
 #include "lmsql.h"
 
 /**
@@ -35,57 +36,49 @@ factor_result::factor_result(const std::string& conns,
 
   ret = sql->connect(conns);
   if (ret != 0) {
+    printf("%s\n", sql->err_msg.c_str());
     return;
   }
 
-  // check table exists
-  try {
-    sql->os.open(1,
-                 "SELECT top 1 * FROM alpha.dbo.sysobjects "
-                 "WHERE xtype = 'U'"
-                 " AND name=:table_name<char[32],in>",
-                 sql->db);
+  // 1. check table exists
+  char query_format[128] =
+      "SELECT top 1 * FROM alpha.dbo.sysobjects "
+      "WHERE xtype = 'U' "
+      "AND name='%s'";
+  char query[256];
 
-    sql->os << (OTL_UNICODE_CHAR_TYPE*)L"factor_info";  // "spt_fallback_db"; //
-                                                        // "factor_info";
-    exists_info = sql->os.get_prefetched_row_count();
-    sql->os.flush();
-    // printf("factor_info %d %s\n", exists, sql->err_msg.c_str());
-    sql->os << (OTL_UNICODE_CHAR_TYPE*)L"factor_result";
-    exists_result = sql->os.get_prefetched_row_count();
-    sql->os.close();
-    // printf("factor_result %d %s\n", exists, sql->err_msg.c_str());
-    if (exists_info == 0) {
-      sql->os.open(1,
-                   "create table alpha.dbo.factor_info ("
-                   "id bigint primary key identity,"
-                   "name varchar(32) not null,"
-                   "author varchar(32),"
-                   "last_update varchar(32)"
-                   ")",
-                   sql->db);
-      sql->os.close();
-    }
-    if (exists_result == 0) {
-      sql->os.open(1,
-                   "create table alpha.dbo.factor_result("
-                   "id bigint primary key identity,"
-                   "name varchar(32) not null,"
-                   "code varchar(32) not null,"
-                   "date int,"
-                   "time int,"
-                   "value float"
-                   ")",
-                   sql->db);
-      sql->os.close();
-    }
-    // printf("create factor tables\n");
-  } catch (otl_exception& e) {
-    //    std::ostringstream os;
-    //    os << e.msg << "\n\t" << e.stm_text << "\n\t" << e.sqlstate << "\n\t"
-    //       << e.var_info << std::endl;
-    //    sql->err_msg += os.str();
-    //    printf("sql err %s\n", sql->err_msg.c_str());
+  memset(query, 0, sizeof(query));
+  snprintf(query, sizeof(query), query_format, "factor_info");
+  sql->select(query);
+  exists_info = sql->row_count;
+
+  memset(query, 0, sizeof(query));
+  snprintf(query, sizeof(query), query_format, "factor_result");
+  sql->select(query);
+  exists_result = sql->row_count;
+
+  // printf("factor_result %d %s\n", exists, sql->err_msg.c_str());
+
+  // 2. create factor result tables
+  if (exists_info == 0) {
+    sql->execute(
+        "create table alpha.dbo.factor_info ("
+        "id bigint primary key identity,"
+        "name varchar(32) not null,"
+        "author varchar(32),"
+        "last_update varchar(32)"
+        ")");
+  }
+  if (exists_result == 0) {
+    sql->execute(
+        "create table alpha.dbo.factor_result("
+        "id bigint primary key identity,"
+        "name varchar(32) not null,"
+        "code varchar(32) not null,"
+        "date int,"
+        "time int,"
+        "value float"
+        ")");
   }
 }
 
@@ -109,49 +102,43 @@ int factor_result::store_factor(const lmapi_result_info& info) {
   int exists = 0;
 
   sql = reinterpret_cast<sql_internal*>(pdata);
-  return 0;
 
-  //  try {
-  //    // 1. check factor info
-  //    sql->os.open(1,
-  //                 "select top 1 name from alpha.dbo.factor_info where "
-  //                 "name=:f1<char[32]>",
-  //                 sql->db);
-  //    sql->os << info.factor_name;
-  //    exists = sql->os.get_prefetched_row_count();
-  //    sql->os.close();
-  //    // printf("chck info\n");
+  // 1. check factor info
+  char query[256];
+  memset(query, 0, sizeof(query));
+  snprintf(query, sizeof(query),
+           "select top 1 name from alpha.dbo.factor_info where "
+           "name='%s'",
+           info.factor_name);
+  sql->select(query);
 
-  //    if (exists >= 1) {
-  //      //  2. update factor info
-  //      sql->os.open(1,
-  //                   "update alpha.dbo.factor_info set
-  //                   author=:f1<char[32],in>, " "last_update=:f2<char[32],in>
-  //                   where name =:f3<char[32],in>", sql->db);
-  //      sql->os << info.factor_author << info.factor_date << info.factor_name;
-  //      sql->os.close();
-  //    } else {
-  //      //  3. insert factor info
-  //      sql->os.open(1,
-  //                   "insert into alpha.dbo.factor_info values(:f1<char[32]>,
-  //                   "
-  //                   ":f2<char[32]>, "
-  //                   ":f3<char[32]>)",
-  //                   sql->db);
-  //      sql->os << info.factor_name << info.factor_author << info.factor_date;
-  //      sql->os.close();
-  //    }
+  exists = sql->row_count;
 
-  //    return 0;
-  //  } catch (otl_exception& e) {
-  //    // intercept OTL exceptions
-  ////    std::ostringstream os;
-  ////    os << e.msg << "\t" << e.stm_text << "\t" << e.sqlstate << "\t"
-  ////       << e.var_info << std::endl;
-  ////    sql->err_msg += os.str();
-  ////    printf("sql err %s\n", sql->err_msg.c_str());
-  //    return 1;
-  //  }
+  if (exists >= 1) {
+    // 2. update factor info
+    memset(query, 0, sizeof(query));
+    snprintf(query, sizeof(query),
+             "update alpha.dbo.factor_info set "
+             "author='%s', "
+             "last_update='%s' "
+             "where name ='%s' ",
+             info.factor_author, info.factor_date, info.factor_name);
+    sql->execute(query);
+  } else {
+    //  3. insert factor info
+    memset(query, 0, sizeof(query));
+    snprintf(query, sizeof(query),
+             "insert into alpha.dbo.factor_info values('%s', "
+             "'%s', "
+             "'%s') ",
+             info.factor_name, info.factor_author, info.factor_date);
+    sql->execute(query);
+  }
+
+  if (!sql->err_msg.empty())
+    return 1;
+  else
+    return 0;
 }
 
 int factor_result::store_result(const std::string& name, const std::string code,
@@ -160,79 +147,54 @@ int factor_result::store_result(const std::string& name, const std::string code,
   std::ostringstream os;
   std::string value;
   int exists = 0;
+  char query[256];
 
   sql = reinterpret_cast<sql_internal*>(pdata);
-  return 0;
 
-  //  try {
-  //    //  1. check factor result exists
-  //    sql->os.close();
-  //    sql->os.open(1,
-  //                 "select top 1 name from alpha.dbo.factor_result where "
-  //                 "name=:f1<char[32],in> and code=:f2<char[32],in>",
-  //                 sql->db);
-  //    sql->os << name << code;
-  //    exists = sql->os.get_prefetched_row_count();
-  //    // sql->os.flush();
-  //    sql->os.close();
+  //  1. check factor result exists
+  memset(query, 0, sizeof(query));
+  snprintf(query, sizeof(query),
+           "select top 1 name from alpha.dbo.factor_result where "
+           "name='%s' and code='%s'",
+           name.c_str(), code.c_str());
+  sql->select(query);
+  exists = sql->row_count;
 
-  //    //  2. delete existing result
-  //    if (exists > 0) {
-  //      sql->os.open(64,
-  //                   "delete from alpha.dbo.factor_result where "
-  //                   "name=:f1<char[32],in> and code=:f2<char[32],in>",
-  //                   sql->db);
-  //      sql->os << name << code;
-  //      // sql->os.flush();
-  //      sql->os.close();
-  //    }
+  //  2. delete existing result
+  if (exists > 0) {
+    memset(query, 0, sizeof(query));
+    snprintf(query, sizeof(query),
+             "delete from alpha.dbo.factor_result where "
+             "name='%s' and code='%s'",
+             name.c_str(), code.c_str());
+    sql->execute(query);
+  }
 
-  //    //  3. insert factor result
-  //    sql->os.open(256,  //"insert into alpha.dbo.factor_result
-  //                       // values('aa', 'bb', 1, 2, 1.1) ",
-  //                 " insert into alpha.dbo.factor_result "
-  //                 "values(:name<char[32],in>,"
-  //                 ":code<char[32],in>,"
-  //                 ":f3<int,in>,"
-  //                 ":f4<int,in>,"
-  //                 ":f5<double,in>)",
-  //                 sql->db);
-  //    for (size_t i = 0; i < dataset.size(); ++i) {
-  //      const lmapi_result_data& ds = dataset[i];
-  //      sql->os << name << code << ds.date << ds.time << ds.value;
-  //      //      std::ostringstream ss;
-  //      //      ss << "insert into alpha.dbo.factor_result values (";
-  //      //      ss << "'" << name << "','" << code << "'," << ds.date << ","
-  //      <<
-  //      //      ds.time
-  //      //         << "," << std::setprecision(15) << ds.value << ")";
-  //      // printf("%s\n", ss.str().c_str());
+  //  3. insert factor result
+  sql->insert(
+      " insert into alpha.dbo.factor_result "
+      "values(:name<char[32],in>,"
+      ":code<char[32],in>,"
+      ":f3<int,in>,"
+      ":f4<int,in>,"
+      ":f5<double,in>)",
+      name, code, dataset);
 
-  //      // otl_cursor::direct_exec(sql->db, ss.str().c_str());
-  //      // sql->os.open(1, ss.str().c_str(), sql->db);
-  //      // sql->os.close();
-  //    }
-
-  //    printf("  store %s result %lu\n", code.c_str(), dataset.size());
-  //    sql->os.close();
-
-  //    return 0;
-  //  } catch (otl_exception& e) {
-  //    // intercept OTL exceptions
-  ////    std::ostringstream os;
-  ////    os << e.msg << "\t" << e.stm_text << "\t" << e.sqlstate << "\t"
-  ////       << e.var_info << std::endl;
-  ////    sql->err_msg += os.str();
-
-  ////    printf("sql err %s\n", sql->err_msg.c_str());
-  //    return 1;
-  //  }
+  printf("  store %s result %lu\n", code.c_str(), dataset.size());
+  if (sql->err_msg.size() != 0)
+    return 1;
+  else
+    return 0;
 }
 
-void factor_result::store(
+int factor_result::store(
     const std::vector<std::string>& stocks,
     const std::vector<std::vector<lmapi_result_data> >& results) {
   lmapi_result_info info;
+  int ret;
+  sql_internal* sql;
+
+  sql = reinterpret_cast<sql_internal*>(pdata);
 
   printf("1. store factor info\n");
   // 1. store info
@@ -242,7 +204,12 @@ void factor_result::store(
   // ctime_r(0, info.factor_date);
   snprintf(info.factor_date, sizeof(info.factor_date), "2019-01-11");
   // printf("call store_factor\n");
-  store_factor(info);
+  ret = store_factor(info);
+  if (ret != 0) {
+    printf("%s", sql->err_msg.c_str());
+    sql->err_msg.clear();
+    return ret;
+  }
 
   printf("2. store factor result\n");
   // 2. store result
@@ -250,8 +217,15 @@ void factor_result::store(
     const std::string& code = stocks[i];
     const std::vector<lmapi_result_data>& result = results[i];
 
-    store_result(factor, code, result);
+    ret = store_result(factor, code, result);
+    if (ret != 0) {
+      printf("%s", sql->err_msg.c_str());
+      sql->err_msg.clear();
+      return ret;
+    }
   }
+
+  return 0;
 }
 
 }  // namespace lmapi

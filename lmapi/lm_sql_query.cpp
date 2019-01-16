@@ -1,7 +1,6 @@
 /** Copyright 2018 He Hao<hehaoslj@sina.com> */
 
 #include "lmapi.h"
-
 #include "lmsql.h"
 
 namespace lmapi {
@@ -59,44 +58,7 @@ lmapi_sql_type sql_dataset::type(int col) const {
   sql = reinterpret_cast<const sql_internal*>(pdata);
   if (col < sql->col_count) {
     const sql_column& desc = sql->col_descs[col];
-    switch (desc.var_dbtype) {
-      case otl_var_bigint:
-      case otl_var_long_int:
-      case otl_var_ubigint:
-        tp = LMAPI_SQL_INT64;
-        break;
-      case otl_var_char:
-      case otl_var_varchar_long:
-      case otl_var_long_string:
-        tp = LMAPI_SQL_STRING;
-        break;
-      case otl_var_double:
-        tp = LMAPI_SQL_FLOAT64;
-        break;
-      case otl_var_float:
-        tp = LMAPI_SQL_FLOAT32;
-        break;
-      case otl_var_int:
-      case otl_var_unsigned_int:
-        tp = LMAPI_SQL_INT32;
-        break;
-      case otl_var_short:
-        tp = LMAPI_SQL_INT16;
-        break;
-      case otl_var_timestamp:
-        tp = LMAPI_SQL_DATETIME;
-        break;
-      case otl_var_raw_long:
-      case otl_var_raw:
-      case otl_var_ltz_timestamp:
-      case otl_var_blob:
-      case otl_var_clob:
-      case otl_var_db2date:
-      case otl_var_db2time:
-        break;
-      default:
-        break;
-    }
+    tp = static_cast<lmapi_sql_type>(desc.lmtype);
   }
   return tp;
 }
@@ -110,12 +72,12 @@ int sql_dataset::get_int(int row, int col) const {
   pos = row * sql->col_count + col;
   if (pos < sql->dataset.size()) {
     const sql_variable& var = sql->dataset[pos];
-    if (var.type == otl_var_float)
+    if (var.lmtype == LMAPI_SQL_FLOAT32)
       value = var.tdata.f32_var;
-    else if (var.type == otl_var_double)
+    else if (var.lmtype == LMAPI_SQL_FLOAT64)
       value = var.tdata.f64_var;
     else
-      value = var.tdata.i32_var;
+      value = var.tdata.i64_var;
   }
   return value;
 }
@@ -129,9 +91,9 @@ int64_t sql_dataset::get_int64(int row, int col) const {
   pos = row * sql->col_count + col;
   if (pos < sql->dataset.size()) {
     const sql_variable& var = sql->dataset[pos];
-    if (var.type == otl_var_float)
+    if (var.lmtype == LMAPI_SQL_FLOAT32)
       value = var.tdata.f32_var;
-    else if (var.type == otl_var_double)
+    else if (var.lmtype == LMAPI_SQL_FLOAT64)
       value = var.tdata.f64_var;
     else
       value = var.tdata.i64_var;
@@ -148,9 +110,9 @@ double sql_dataset::get_float64(int row, int col) const {
   pos = row * sql->col_count + col;
   if (pos < sql->dataset.size()) {
     const sql_variable& var = sql->dataset[pos];
-    if (var.type == otl_var_float)
+    if (var.lmtype == LMAPI_SQL_FLOAT32)
       value = var.tdata.f32_var;
-    else if (var.type == otl_var_double)
+    else if (var.lmtype == LMAPI_SQL_FLOAT64)
       value = var.tdata.f64_var;
     else
       value = var.tdata.i64_var;
@@ -167,16 +129,15 @@ std::string sql_dataset::get_string(int row, int col) const {
   pos = row * sql->col_count + col;
   if (pos < sql->dataset.size()) {
     const sql_variable& var = sql->dataset[pos];
-    if (var.type == otl_var_char || var.type == otl_var_varchar_long ||
-        var.type == otl_var_long_string)
+    if (var.lmtype == LMAPI_SQL_STRING) {
       value = var.str_var;
-    else if (var.type == otl_var_double) {
+    } else if (var.lmtype == LMAPI_SQL_FLOAT64) {
       os << var.tdata.f64_var;
       value = os.str();
-    } else if (var.type == otl_var_float) {
+    } else if (var.lmtype == LMAPI_SQL_FLOAT32) {
       os << var.tdata.f32_var;
       value = os.str();
-    } else if (var.type == otl_var_timestamp) {
+    } else if (var.lmtype == LMAPI_SQL_INT64) {
       os << var.tdata.u64_var;
       value = os.str();
     } else {

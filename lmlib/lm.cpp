@@ -1,3 +1,5 @@
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
+
 #if defined(_MSC_VER) /** MSC */
 #define LMAPI_EXPORT __declspec(dllexport)
 #else

@@ -1,10 +1,17 @@
-#include "lmapi.h"
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
 
 #include <stdio.h>
 #include <sys/stat.h>
 #include <time.h>
 
+#include "lmapi.h"
+
 namespace lmapi {
+#if defined(_WIN32)
+const char path_sep = '\\';
+#else
+const char path_sep = '/';
+#endif
 
 struct serial_internal {
   int type;
@@ -18,33 +25,30 @@ struct serial_internal {
   std::string get_file(const char* code, int date) {
     if (type == LMAPI_TICK_TYPE) {
       return get_rtick_file(code, date);
-    } else
+    } else {
       return get_kdata_file(code, date);
+    }
   }
 
   std::string get_rtick_file(const char* code, int date) {
     std::string stype;
     std::string value;
-#if defined(_WIN32)
-    char sep = '\\';
-#else
-    char sep = '/';
-#endif
     char buf[1024];
 
     // "\2019\0110\000070\20190110000070-L2_Tick"
 
     value = root;
     if (value.size() != 0) {
-      if (*(value.end() - 1) != sep) {
-        value += sep;
+      if (*(value.end() - 1) != path_sep) {
+        value += path_sep;
       }
     }
     int year = date / 10000;
     int yday = date % 10000;
     memset(buf, 0, sizeof(buf));
     snprintf(buf, sizeof(buf), "%s%04d%c%04d%c%s%c%08d%s-L2_tick",
-             value.c_str(), year, sep, yday, sep, code, sep, date, code);
+             value.c_str(), year, path_sep, yday, path_sep, code, path_sep,
+             date, code);
 
     value = buf;
     return value;
@@ -53,11 +57,6 @@ struct serial_internal {
   std::string get_kdata_file(const char* instrument, int tp) {
     std::string stype;
     std::string value;
-#if defined(_WIN32)
-    char sep = '\\';
-#else
-    char sep = '/';
-#endif
     char buf[1024];
 
     (void)tp;
@@ -66,8 +65,8 @@ struct serial_internal {
 
     value = root;
     if (value.size() != 0) {
-      if (*(value.end() - 1) != sep) {
-        value += sep;
+      if (*(value.end() - 1) != path_sep) {
+        value += path_sep;
       }
     }
 
@@ -93,7 +92,7 @@ struct serial_internal {
     }
     memset(buf, 0, sizeof(buf));
     snprintf(buf, sizeof(buf), "%s%s%c%s.%s.kdata", value.c_str(), instrument,
-             sep, instrument, stype.c_str());
+             path_sep, instrument, stype.c_str());
 
     value = buf;
     return value;

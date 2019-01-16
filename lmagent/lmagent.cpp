@@ -1,11 +1,25 @@
+/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
+
 #include <stdio.h>
-#include <string>
 
 #include <jansson.h>
 
 #include <lmice_trace.h>
 
+#include <string>
+#include <vector>
+
 #include "lmagent.h"
+
+struct lm_config_file{
+    std::string factor_name;
+    std::vector<std::string> instrument_array;
+    std::string start_date;
+    std::string end_date;
+    lm_data_type data_type;
+    int data_length;
+    int data_step;
+};
 
 json_t *obj_get(json_t *root, const char *keys) {
   json_t *o = root;

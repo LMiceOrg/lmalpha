@@ -220,7 +220,7 @@ class factor_result {
 
   const std::string& error() const;
 
-  void store(const std::vector<std::string>& stocks,
+  int store(const std::vector<std::string>& stocks,
              const std::vector<std::vector<lmapi_result_data> >& results);
 
   int store_factor(const lmapi_result_info& info);

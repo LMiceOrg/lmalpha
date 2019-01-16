@@ -1,18 +1,14 @@
 /** Copyright 2018 He Hao<hehaoslj@sina.com> */
 #include <string.h>
 
+#include <call_thunk.h>
+
 #include <algorithm>
 #include <functional>
 #include <string>
 
 #include "lmapi.h"
 #include "lmstock.h"
-
-#include <call_thunk.h>
-
-/** xml2 */
-#include <libxml/parser.h>
-#include <libxml/xmlmemory.h>
 
 #if defined(WIN32) || defined(WIN64)
 #define WIN32_MEAN_AND_LEAN
