@@ -10,6 +10,7 @@ CTestTestfile.cmake
 
 .vscode
 build/*
+vs2015/*
 
 *.user
 *.user.*
