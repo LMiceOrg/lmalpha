@@ -1,9 +1,10 @@
-/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
+﻿/** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
 #ifndef INCLUDE_LMALPHA_H_
 #define INCLUDE_LMALPHA_H_
 
 #include <stdio.h>
 #include <stdint.h>
+#include <locale.h>
 
 #include <chrono>
 #include <memory>
@@ -36,7 +37,7 @@
 #define KMIN120 LMAPI_2HOUR_TYPE
 
 /** 初始化 */
-#define LMAPI_INIT(x)                                     \
+#define LMAPI_INIT(x) setlocale(LC_ALL, ""); \
   std::shared_ptr<lmapi::lmapi> _s_api(new lmapi::lmapi); \
   std::shared_ptr<lmapi::config> _s_cfg;                  \
   std::shared_ptr<lmapi::console> _s_log;                 \

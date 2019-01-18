@@ -19,10 +19,10 @@ extern int lm_run_file(const char* name);
 int main(int argc, char** argv) {
   setlocale(LC_ALL, "");
   if (argc != 3) {
-    printf(
-        "Usage:\n"
-        "  [app] [dll file] [config file(json format)]\n"
-        "\teg: lmagent test.json\n");
+	  printf(
+		  "Usage:\n"
+		  "  [app] [dll file] [config file(json format)]\n"
+		  "\teg: lmagent factpr.dll test.json\n");
     return -1;
   }
   /*
@@ -102,9 +102,20 @@ int main(int argc, char** argv) {
   */
 
   typedef void (*f_run)(const char* cfg);
+  //printf("%ls\n", L"因子计算完成");
 #if defined(_WIN32)
+  TCHAR buff[256];
+  memset(buff, 0, sizeof(buff));
+  GetCurrentDirectory(256, buff);
+  printf("current folder is %ls\n", buff);
+
   HMODULE hmod = LoadLibraryA(argv[1]);
+  DWORD err = GetLastError();
   f_run func = (f_run)GetProcAddress(hmod, "factor_run");
+  if(func == nullptr) {
+  printf("from [%p] get factor_run function %p as %d\n", hmod, func, err);
+   return 1;
+   }
 #else
   void* hdll = dlopen(argv[1], RTLD_LAZY);
   f_run func = (f_run)dlsym(hdll, "factor_run");

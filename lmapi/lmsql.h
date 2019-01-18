@@ -2,7 +2,7 @@
 #ifndef LMAPI_LMSQL_H_
 #define LMAPI_LMSQL_H_
 
-#include <iconv.h>
+
 #include <stdint.h>
 
 #include <sstream>
@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "lmapi.h"
+#include "lmiconv.h"
 
 class otl_connect;
 

@@ -6,6 +6,12 @@
 
 #include "lmstock.h"
 
+#if defined(_MSC_VER)
+#define LIBICONV_DLL_EXPORTED __declspec(dllexport) 
+#else 
+#define LIBICONV_DLL_EXPORTED 
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -133,7 +139,7 @@ void lmapi_sql_close(lmapi_t api, struct lmapi_sql_dataset* ds);
 namespace lmapi {
 
 /** config read */
-class config {
+class LIBICONV_DLL_EXPORTED config {
  public:
   friend class lmapi;
 
@@ -160,7 +166,7 @@ class config {
   void* pdata;
 };
 
-class console {
+class LIBICONV_DLL_EXPORTED console {
  public:
   friend class lmapi;
   ~console();
@@ -175,7 +181,7 @@ class console {
   void* pdata;
 };
 
-class sql_dataset {
+class LIBICONV_DLL_EXPORTED sql_dataset {
  public:
   friend class lmapi;
   ~sql_dataset();
@@ -195,7 +201,7 @@ class sql_dataset {
   void* pdata;
 };
 
-class serial_dataset {
+class LIBICONV_DLL_EXPORTED serial_dataset {
  public:
   friend class lmapi;
   ~serial_dataset();
@@ -213,7 +219,7 @@ class serial_dataset {
   void* pdata;
 };
 
-class factor_result {
+class LIBICONV_DLL_EXPORTED factor_result {
  public:
   friend class lmapi;
   ~factor_result();
@@ -234,7 +240,7 @@ class factor_result {
   std::string factor;
 };
 
-class lmapi {
+class LIBICONV_DLL_EXPORTED lmapi {
  public:
   lmapi();
   ~lmapi();

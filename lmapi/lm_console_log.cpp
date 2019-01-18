@@ -112,32 +112,39 @@ inline void time_string(console_internal *con, std::string &tstr) {
   std::string format = "%4d-%02d-%02d %02d:%02d:%02d.%07lld";
   int64_t now;
   time_t tnow;
-  struct tm pt;
+  struct tm stack_pt;
+  struct tm *pt = &stack_pt;
   char buff[32] = {'\0'};
   get_system_time(&now);
   tnow = now / 10000000;
-  gmtime_r(&tnow, &pt);
+#if defined(_MSC_VER)
+  pt = gmtime(&tnow);
+#else
+  gmtime_r(&tnow, pt);
+#endif
+
   if ((con->count % 100) != 1) {
     /** short format */
     now -= con->begin_time;
-    pt.tm_sec = (now / 10000000LL) % 60;
-    pt.tm_min = (now / (60 * 10000000LL)) % 60;
-    pt.tm_hour = (now / (60 * 60 * 10000000LL)) % 24;
+    pt->tm_sec = (now / 10000000LL) % 60;
+    pt->tm_min = (now / (60 * 10000000LL)) % 60;
+    pt->tm_hour = (now / (60 * 60 * 10000000LL)) % 24;
 
-    if (pt.tm_hour == 0) {
-      if (pt.tm_min == 0) {
-        sprintf(buff, "%02d.%07lld", pt.tm_sec, now % 10000000);
+    if (pt->tm_hour == 0) {
+      if (pt->tm_min == 0) {
+        sprintf(buff, "%02d.%07lld", pt->tm_sec, now % 10000000);
       } else {
-        sprintf(buff, "%02d:%02d.%07lld", pt.tm_min, pt.tm_sec, now % 10000000);
+        sprintf(buff, "%02d:%02d.%07lld", pt->tm_min, pt->tm_sec,
+                now % 10000000);
       }
     } else {
-      sprintf(buff, "%02d:%02d:%02d.%07lld", pt.tm_hour, pt.tm_min, pt.tm_sec,
-              now % 10000000);
+      sprintf(buff, "%02d:%02d:%02d.%07lld", pt->tm_hour, pt->tm_min,
+              pt->tm_sec, now % 10000000);
     }
   } else {
     con->begin_time = now;
-    sprintf(buff, "%4d-%02d-%02d %02d:%02d:%02d.%07lld", pt.tm_year + 1900,
-            pt.tm_mon + 1, pt.tm_mday, pt.tm_hour, pt.tm_min, pt.tm_sec,
+    sprintf(buff, "%4d-%02d-%02d %02d:%02d:%02d.%07lld", pt->tm_year + 1900,
+            pt->tm_mon + 1, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec,
             now % 10000000);
   }
 
@@ -161,7 +168,7 @@ inline void console_logging(console_internal *con, int type, const char *buff) {
     con->tid = tid;
     os << "0x" << std::hex << con->tid;
     con->thread_name = os.str();
-    pthread_getname_np(pthread_self(), name, 127);
+    pthread_getname_np(eal_gettid(), name, 127);
     if (strlen(name) != 0) con->thread_name = name;
   }
 
@@ -209,7 +216,7 @@ console::console(int tp) : pdata(NULL) {
   con->tid = reinterpret_cast<int64_t>(reinterpret_cast<void *>(eal_gettid()));
   os << "0x" << std::hex << con->tid;
   con->thread_name = os.str();
-  pthread_getname_np(pthread_self(), name, 127);
+  pthread_getname_np(eal_gettid(), name, 127);
   if (strlen(name) != 0) con->thread_name = name;
 
   switch (tp) {

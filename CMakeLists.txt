@@ -4,24 +4,78 @@ project(ALPHA)
 
 if(MINGW)
     message("mingw ${PKG_CONFIG_PATH}")
+    add_definitions("-DUNICODE -D_UNICODE")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -fexec-charset=utf-8")
     #set(CMAKE_C_FLAGS "${CMAK_C_FLAGS}  -fexec-charset=utf-8")
 endif()
 
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+    SET(json_INCLUDE_DIRS d:/thirdpart/jansson/include)
+    SET(json_LIBRARIES jansson)
+    SET(json_LIBRARY_DIRS d:/thirdpart/jansson/lib/Release/)
+
+#    add_library(json STATIC IMPORTED) # or STATIC instead of SHARED
+#    set_property(TARGET json PROPERTY
+#        IMPORTED_LOCATION "d:/thirdpart/jansson/lib/Release/jansson.lib")
+#    set_property(TARGET json PROPERTY
+#      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/jansson/include"
+#    )
+
+    SET(Iconv_INCLUDE_DIRS d:/thirdpart/iconv/include)
+    SET(Iconv_LIBRARIES iconv)
+    SET(Iconv_LIBRARY_DIRS d:/thirdpart/iconv/x64/Release)
+
+#    add_library(Iconv SHARED IMPORTED) # or STATIC instead of SHARED
+#    set_property(TARGET Iconv PROPERTY
+#        IMPORTED_LOCATION "d:/thirdpart/iconv/x64/Release/iconv.lib")
+#    set_property(TARGET Iconv PROPERTY
+#      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/iconv/include"
+#    )
+
+    SET(xml2_INCLUDE_DIRS d:/thirdpart/libxml2)
+    SET(xml2_LIBRARIES libxml2)
+    SET(xml2_LIBRARY_DIRS d:/thirdpart/libxml2)
+
+#    add_library(xml2 SHARED IMPORTED) # or STATIC instead of SHARED
+#    set_property(TARGET xml2 PROPERTY
+#        IMPORTED_LOCATION "d:/thirdpart/libxml2/libxml2.lib")
+#    set_property(TARGET xml2 PROPERTY
+#      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/libxml2"
+#    )
+
+    SET(gsl_INCLUDE_DIRS d:/thirdpart/gsl)
+    SET(gsl_LIBRARIES gsl cblas)
+    SET(gsl_LIBRARY_DIRS d:/thirdpart/gsl/lib/x64/Release)
+
+#    add_library(gsl STATIC IMPORTED) # or STATIC instead of SHARED
+#    set_property(TARGET gsl PROPERTY
+#        IMPORTED_LOCATION "d:/thirdpart/gsl/lib/x64/Release/gsl.lib d:/thirdpart/gsl/lib/x64/Release/cblas")
+#    set_property(TARGET gsl PROPERTY
+#      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/gsl"
+#    )
+
+    message("MSVC: jansson ${json_INCLUDE_DIRS}")
+endif()
+
 message("compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU|Clang")
-    set(CMAKE_CXX_FLAGS "-Wall -DUNICODE -D_UNICODE -std=c++11 -march=native -mtune=native")
-    set(CMAKE_C_FLAGS   "-Wall -DUNICODE -D_UNICODE -std=c90 -march=native -mtune=native")
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU|Clang")
+    add_definitions("-DUNICODE -D_UNICODE")
+    set(CMAKE_CXX_FLAGS "-Wall  -std=c++11 -march=native -mtune=native")
+    set(CMAKE_C_FLAGS   "-Wall  -std=c90 -march=native -mtune=native")
 
-    set(CMAKE_CXX_FLAGS "-Wall -DUNICODE -D_UNICODE -std=c++11 -march=native -mtune=native")
-    set(CMAKE_C_FLAGS   "-Wall -DUNICODE -D_UNICODE -std=c90 -march=native -mtune=native")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+    add_definitions("-DUNICODE -D_UNICODE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -march=native -mtune=native")
+    set(CMAKE_C_FLAGS   "${CMAKE_CXX_FLAGS} -std=c90 -march=native -mtune=native")
 endif()
 
 message("os: ${CMAKE_SYSTEM_NAME}")
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
+    find_package(PkgConfig REQUIRED)
+
     #shared lib suffix
     set(dll_ext ".dylib")
 
@@ -40,10 +94,6 @@ endif()
 #set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-
-
-find_package(PkgConfig REQUIRED)
 
 FIND_PATH(eal_header lmice_trace.h
     PATHS ../fmtrader/eal)

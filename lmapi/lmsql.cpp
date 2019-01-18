@@ -1,6 +1,18 @@
 /** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
 
+#include <stdint.h>
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using std::wstring;
+
 #define OTL_UNICODE  // Enable Unicode OTL for ODBC
+#define OTL_CPP_11_ON
+#define OTL_STL
+#define OTL_ANSI_CPP
 
 // Enable OTL Unicode rlogon and otl_exception for ODBC
 #define OTL_UNICODE_EXCEPTION_AND_RLOGON
@@ -16,19 +28,13 @@
 
 #if defined(_WIN32)
 #define OTL_ODBC_MSSQL_2008  // Compile OTL 4/ODBC, MS SQL 2008
-// #define OTL_ODBC // Compile OTL 4/ODBC. Uncomment this when used with MS
+//#define OTL_ODBC // Compile OTL 4/ODBC. Uncomment this when used with MS
 // SQL 7.0/ 2000
 #else
 #define OTL_ODBC_UNIX  // uncomment this line if UnixODBC is used
 #endif
 
 #include <otlv4.h>
-
-#include <stdint.h>
-#include <stdio.h>
-#include <iostream>
-#include <sstream>
-#include <vector>
 
 #include "lmsql.h"
 
@@ -61,8 +67,8 @@ static inline size_t utf16_size(const unsigned char* str) {
   return pos;
 }
 
-static inline size_t utf16_size(const SQLTCHAR* str) {
-  const SQLTCHAR* p = str;
+static inline size_t utf16_size(const SQLWCHAR* str) {
+  const SQLWCHAR* p = str;
   size_t pos = 0;
   do {
     if (*p != 0) {
@@ -73,6 +79,7 @@ static inline size_t utf16_size(const SQLTCHAR* str) {
 
   return pos;
 }
+
 static inline std::string utf16_utf8(iconv_t codec, const unsigned char* str) {
   std::ostringstream oss;
   char buff[1024];
@@ -104,7 +111,7 @@ static inline std::string utf16_utf8(iconv_t codec, const unsigned char* str) {
   return utf8_string;
 }
 
-static inline std::string utf16_utf8(iconv_t codec, const SQLTCHAR* str) {
+static inline std::string utf16_utf8(iconv_t codec, const SQLWCHAR* str) {
   std::ostringstream oss;
   char buff[1024];
   char* in;
@@ -114,7 +121,7 @@ static inline std::string utf16_utf8(iconv_t codec, const SQLTCHAR* str) {
   size_t ret;
   std::string utf8_string;
 
-  in = reinterpret_cast<char*>(const_cast<SQLTCHAR*>(str));
+  in = reinterpret_cast<char*>(const_cast<SQLWCHAR*>(str));
   in_size = utf16_size(str);
   if (in_size < 256) {
     memset(buff, 0, 1024);
@@ -180,8 +187,7 @@ static inline std::string utf8_utf16(iconv_t codec, const char* str) {
 }
 
 static inline sql_variable read_var(otl_stream& os, iconv_t codecs,
-                                    const sql_column& column,
-                                    otl_long_string* ostr);
+                                    const sql_column& column);
 
 static inline int db_lmtype(int dbtype);
 
@@ -221,7 +227,13 @@ int sql_internal::connect(const std::string& conn_string) {
 
   } catch (otl_exception& e) {
     // intercept OTL exceptions
+
     err_msg = exception_utf8(codec, e);
+#if defined(_MSC_VER)
+	printf("err msg %s\n", err_msg.c_str());
+
+#endif
+	//printf("sql conn failed %ls\n", e.msg);
 
     return 1;
   }
@@ -251,7 +263,8 @@ void sql_internal::select(const std::string& query) {
   int array_size = 64;
   otl_column_desc* descs;
   size_t col_pos = 0;
-  otl_long_string ostr(1024);
+  //otl_long_string ostr(1024);
+  
 
   try {
     //  1. open
@@ -278,7 +291,7 @@ void sql_internal::select(const std::string& query) {
     }
 
     //  3. read dataset
-    // printf("read dataset\n");
+     //printf("read dataset\n");
     dataset.clear();
     dataset.reserve(os.get_prefetched_row_count() * col_count);
     col_pos = 0;
@@ -286,7 +299,7 @@ void sql_internal::select(const std::string& query) {
       const sql_column& column = col_descs[col_pos % col_count];
       sql_variable var;
 
-      var = read_var(os, codec, column, &ostr);
+      var = read_var(os, codec, column);
       dataset.push_back(var);
       col_pos++;
     }
@@ -299,6 +312,7 @@ void sql_internal::select(const std::string& query) {
 
   } catch (otl_exception& e) {
     // intercept OTL exceptions
+	  //printf("readvar error\n" );
     err_msg = exception_utf8(codec, e);
   }
 }
@@ -316,7 +330,6 @@ void sql_internal::insert(const std::string& query) {
 void sql_internal::insert(const std::string& format, const std::string& f1,
                           const std::string& f2,
                           const std::vector<lmapi_result_data>& rd) {
-
   std::string uf1;
   std::string uf2;
 
@@ -378,11 +391,11 @@ static inline int db_lmtype(int dbtype) {
 }
 
 static inline sql_variable read_var(otl_stream& os, iconv_t codecs,
-                                    const sql_column& column,
-                                    otl_long_string* ostr) {
+                                    const sql_column& column) {
   sql_variable var;
   otl_datetime dt;
-  otl_long_unicode_string ustr;
+  otl_long_string ustr;
+
 
   var.type = column.var_dbtype;
   // printf("%s\t%d\n", column.name, column.var_dbtype);
@@ -394,7 +407,7 @@ static inline sql_variable read_var(otl_stream& os, iconv_t codecs,
     case otl_var_char:
     case otl_var_varchar_long:
     case otl_var_long_string:
-      os >> ustr;
+      os >> ustr.v;
       var.str_var = utf16_utf8(codecs, ustr.v);
       var.lmtype = LMAPI_SQL_STRING;
       break;

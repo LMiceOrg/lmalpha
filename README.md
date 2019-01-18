@@ -21,3 +21,5 @@ cmake & make
  4 [gsl](https://www.gnu.org/software/gsl/) GNU Scientific Library
 
  The GNU Scientific Library (GSL) is a collection of routines for numerical computing. The routines have been written from scratch in C, and present a modern Applications Programming Interface (API) for C programmers, allowing wrappers to be written for very high level languages.
+
+5. [iconv](libiconv)

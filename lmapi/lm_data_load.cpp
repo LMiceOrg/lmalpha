@@ -141,17 +141,23 @@ std::vector<lmtickdata> serial_dataset::get_tick(const std::string& code) {
   serial_internal* se;
   se = reinterpret_cast<serial_internal*>(pdata);
 
-  struct tm now;
+  struct tm stack_now;
+  struct tm* now = &stack_now;
   time_t tm_now = se->tm_begin;
   while (tm_now < se->tm_end) {
-    gmtime_r(&tm_now, &now);
+#if defined(_MSC_VER)
+    now = gmtime(&tm_now);
+#else
+    gmtime_r(&tm_now, now);
+#endif
     int date;
     std::string tick_file;
     struct stat st;
     int ret;
 
     // 1. get file name
-    date = (now.tm_year + 1900) * 10000 + (now.tm_mon + 1) * 100 + now.tm_mday;
+    date =
+        (now->tm_year + 1900) * 10000 + (now->tm_mon + 1) * 100 + now->tm_mday;
     tick_file = se->get_file(code.c_str(), date);
 
     // 2. check file stat

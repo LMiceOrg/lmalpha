@@ -128,10 +128,10 @@ void lmapi::console_close(console* con) { delete con; }
 
 //      "Driver=SQLite3;Database=/Users/hehao/work/"
 //      "build-alpha-Desktop_Qt_5_10_1_clang_64bit-Debug/test.db";
-#define LMAPI_DSN                           \
-  "Driver={ODBC Driver 17 for SQL Server};" \
-  "Server=192.168.2.106;"                   \
-  "Uid=alpha_master;Pwd=alpha_master;"
+//#define LMAPI_DSN                           \
+//  "Driver={ODBC Driver 17 for SQL Server};" \
+//  "Server=192.168.2.106;"                   \
+//  "Uid=alpha_master;Pwd=alpha_master;"
 
 //"Connect Timeout=60;";
 
@@ -142,7 +142,7 @@ sql_dataset* lmapi::sql_open(const std::string& query) {
   api = reinterpret_cast<lmapi_internal*>(pdata);
   dsn = api->sql_dsn;
   sql_dataset* ds = new sql_dataset(dsn, query);
-  // printf("query:%s\n", query.c_str());
+  //printf("connect:%s\n", dsn.c_str());
   return ds;
 }
 

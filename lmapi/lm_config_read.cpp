@@ -33,7 +33,7 @@ struct config_internal {
       xmlFreeDoc(doc);
     } else {
       /** close json */
-      json_decrefp(&(root));
+      json_decref(root);
     }
   }
 
