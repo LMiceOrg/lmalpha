@@ -1,0 +1,38 @@
+@startuml
+note right of 底层API
+    基于C90标准设计
+    优化执行性能
+end note
+底层API -> 中层API:智能指针封装，自动C++对象管理
+
+note over 中层API
+    基于C++11标准设计
+    优化对象管理
+end note
+
+note over  高层API
+    基于匿名函数与宏设计
+    优化操作过程
+end note
+
+
+中层API -> 高层API: 调用细节封装，抽象过程活动
+
+
+高层API <-- 因子计算程序: 关注因子设计领域知识与操作过程
+
+中层API <-- 因子计算程序: 关注C++对象与调用过程
+
+底层API<-- 因子计算程序: 关注内存与对象生命周期管理
+
+
+box "因子库" #LightBlue
+    participant 底层API
+    participant 中层API
+    participant 高层API
+end box
+
+box "研究员" #LightYellow
+    participant 因子计算程序
+end box
+@enduml

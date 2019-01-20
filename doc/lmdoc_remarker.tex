@@ -1,0 +1,60 @@
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{ifthen}
+
+\newcounter{coderemarks}
+\setcounter{coderemarks}{1}
+\newcounter{codevar}
+\setcounter{codevar}{1}
+
+\newcommand{\circlemark}[1]{%
+\tikz\node[text=white,font=\sffamily,inner sep=-0.05mm,draw,circle,fill=black]{#1};}%
+%
+\newcommand{\makeremark}[1]{%
+\circlemark{\arabic{coderemarks}}%
+\global \expandafter\def \csname codebox\the\value{coderemarks}\endcsname{#1}%
+\stepcounter{coderemarks}}
+%
+\newcommand{\showremarks}{%
+\begin{list}{\circlemark{\arabic{codevar}}} %
+{} %
+\whiledo{\value{codevar} < \value{coderemarks}}{ %
+\item \expandafter\csname codebox\the\value{codevar}\endcsname %
+\stepcounter{codevar}} %
+\end{list} %
+\setcounter{coderemarks}{1}%
+\setcounter{codevar}{1}%
+}
+
+% 默认嵌入代码风格
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.4,0,0.92}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.97}
+
+\lstset{language=C++,
+basicstyle=\normalsize,
+morekeywords={LMAPI_INIT,shared_ptr},
+escapeinside={//\$\#}{\$},
+backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numbers=left,
+    stepnumber=2,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true}
+
+
+%阅读到此为止
+\newcommand{\highlevelapiend}{%
+\begin{minipage}{0.8\linewidth}%
+\centering%
+——\emph{\color{red}如无需掌握底层API技术细节，此节阅读到此为止。}——%
+\end{minipage}%
+\newline%
+}

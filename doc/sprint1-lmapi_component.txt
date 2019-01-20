@@ -1,0 +1,31 @@
+@startuml
+skinparam componentStyle uml2
+
+rectangle "因子计算程序" <<初始化因子库API>> {
+interface "日志输出" as log
+interface "配置文件读取" as cfg
+interface "时间序列数据访问" as serial
+interface "SQL数据库查询" as sql
+interface "计算结果存储" as result
+}
+
+rectangle "因子库" {
+[控制台日志组件] as log_api
+[配置文件组件] as cfg_api
+[时间序列数据组件] as serial_api
+[SQL数据库访问组件] as sql_api
+[计算结果存储组件] as result_api
+
+}
+
+serial <.. serial_api: K线、Tick序列
+
+log <.. log_api: 输出彩色日志
+
+cfg <.. cfg_api: 配置参数
+
+sql <.. sql_api: 数据集
+
+result <.. result_api: 存储因子
+
+@enduml

@@ -2,16 +2,35 @@
 % !TEX TS-program = xelatex
 % !TEX encoding = UTF-8 Unicode
 %\documentclass[10pt, a4paper]{article}
-\documentclass[10pt, a4paper]{book}
+%\documentclass[10pt, a4paper]{book}
+\documentclass[11pt]{report}
+
 % fontawesome
 \usepackage{fontawesome}
 \usepackage{fontspec,xltxtra,xunicode}
 
+\usepackage{geometry}
+\geometry{a4paper,left=3cm,right=2cm,top=3cm,bottom=3cm}
+
+% 使用彩色
+\usepackage{color}
+
+%支持嵌入图像
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+%使用注释
+\usepackage{comment}
+\usepackage{marginnote}
+
+%使用remarker listings 实现代码语法高亮 和批注
+\include{lmdoc_remarker}
+
 \usepackage{xeCJK}
 
 \usepackage{draftwatermark}
-\SetWatermarkText{草稿}
-\SetWatermarkScale{0.5}%设置水印的显示大小
+\SetWatermarkText{内部文档}
+\SetWatermarkScale{0.33}%设置水印的显示大小
 
 %设置中文字体
 \setCJKmainfont{STHeitiSC-Light}   % 设置缺省中文字体
@@ -20,21 +39,33 @@
 \setmainfont{ArialMT}   % 英文衬线字体
 \setmonofont{Monaco}   % 英文等宽字体
 
+%设置首行缩紧
+\usepackage{indentfirst}
+
 \defaultfontfeatures{Mapping=tex-text}
 \XeTeXlinebreaklocale “zh”
 \XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt  %文章内中文自动换行
 
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\lfoot{内部文档}
+\cfoot{\thepage}
+%\rfoot{何浩 <hehaoslj@sina.com>}
+\fancyhead[C]{Sprint1}
+\fancyhead[L]{LMALPHA使用手册}
+\fancyhead[R]{\leftmark}
 
 
-\title{LMAPI使用手册}
+\title{LMALPHA使用手册}
 
 \author{何浩 hehaoslj@sina.com}
 
 \begin{document}
 %\maketitle
 \begin{titlepage}
-{\large    第一版}
-{\normalsize ver 1.0}
+{\large    第一版 \faDotCircleO }
+{\normalsize    Sprint1 }
 
 \vspace*{\stretch{3}}
 
@@ -57,31 +88,13 @@ LMAlpha使用手册}
 \tableofcontents
 
 \part[系统设计]{Alpha系统设计与原理}
-\chapter{简介}
 
-LMAPI库是用于辅助研究员与开发员设计验证与编程实现Alpha策略而设计的一套函数库。主要代码为C++语言实现，依据C++11、C90标准。
-    \chapter{设计原理}
-        \section{状态机}
-        \section{框架与库}
-    \chapter{总体设计}
-    \chapter{数据库详细设计}
-    \chapter{因子库详细设计}
-        \section{库初始化接口API}
-        \section{控制台日志API}
-        \section{配置文件读取API}
-        \section{时间序列读取API}
-        \section{SQL数据库查询API}
-        \section{结构存储API}
-    \chapter{辅助库详细设计}
-    \chapter{执行框架详细设计}
-    \chapter{界面工具详细设计}
+\include{lmalpha_design}
+
 \part[用例]{LMAPI库使用样例}
-    \chapter{简单示例}
-        \section{简单因子设计需求}
-        \section{基于高层框架编程}
-        \section{基于底层API编程}
+
+\include{lmalpha_usecase}
+
 \part[FAQ]{常见问题与说明}
-    \chapter{常见问题}
-    \chapter{最佳实践}
-    \chapter{版本说明}
+\include{lmalpha_practice}
 \end{document}
