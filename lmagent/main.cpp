@@ -3,9 +3,13 @@
 #include <locale.h>
 #include <stdio.h>
 
+#include "../include/lmstock.h"
 #include "../lmapi/lmapi.h"
+#include "../lmapi/lmstrencode.h"
 
 #include "lmice_eal_thread.h"
+
+#include <thread>
 
 #if defined(_WIN32)
 #define WIN32_MEAN_AND_LEAN
@@ -14,95 +18,85 @@
 #include <dlfcn.h>
 #endif
 
+#include <cmath>
+#include <iostream>
+#include <vector>
+
 extern int lm_run_file(const char* name);
 
 int main(int argc, char** argv) {
   setlocale(LC_ALL, "");
+  lmapi::lmkdatas kd;
+  std::cout << kd.size() << std::endl;
+
+  char buff[16];
+  kd.pack(buff, 16);
+  printf("%lu  %lu\n", *(size_t*)buff, *(size_t*)(buff + sizeof(size_t)));
+  kd.unpack(buff, 16);
+  printf("%lu  %lu\n", *(size_t*)buff, *(size_t*)(buff + sizeof(size_t)));
+
+  //  auto api = new lmapi::lmapi();
+  //  auto cfg = api->config_open("test_node.xml");
+  //  auto plist = cfg->get_array_string("root.node.prop");
+  //  for (size_t i = 0; i < plist.size(); ++i) {
+  //    std::cout << plist[i] << std::endl;
+  //  }
+
+  //  delete cfg;
+  //  plist.clear();
+  //  cfg = api->config_open("test_prop.xml");
+  //  plist = cfg->get_array_string("root.node.prop");
+  //  for (size_t i = 0; i < plist.size(); ++i) {
+  //    std::cout << plist[i] << std::endl;
+  //  }
+  //  delete cfg;
+  //  delete api;
+  //  //  return 0;
+
+  //  std::thread t([]() {
+  //    auto encode = lmapi_strencode_capi();
+  //    char* gbk = nullptr;
+  //    char str[] = "hello world\n";
+  //    size_t wstr_len = 0;
+  //    size_t wstr_bytes = 0;
+  //    wstr_len = encode->utf8_to_gbk(str, strlen(str) + 1, &gbk, &wstr_bytes);
+
+  //    printf("hello world gbk %s size %lu\n", gbk, wstr_len);
+  //  });
+  //  t.join();
+
+  //  auto encode = lmapi_strencode_capi();
+  //  char str[] = "hello";
+  //  wchar_t* wstr = nullptr;
+  //  size_t wstr_len = 0;
+  //  size_t wstr_bytes = 0;
+
+  //  char str2[] = "welcome";
+  //  wstr_len = encode->utf8_to_wstr(str2, strlen(str2) + 1, &wstr,
+  //  &wstr_bytes); printf("%s to wstr %ls bytes: %lu len %lu\n", str2, wstr,
+  //  wstr_bytes,
+  //         wstr_len);
+
+  //  wstr_len = encode->utf8_to_wstr(str, strlen(str) + 1, &wstr, &wstr_bytes);
+  //  printf("%s to wstr %ls bytes: %lu len %lu\n", str, wstr, wstr_bytes,
+  //         wstr_len);
+
+  //  wstr_len = encode->utf8_to_wstr("hehao", 6, &wstr, &wstr_bytes);
+  //  printf("%s to wstr %ls bytes: %lu len %lu\n", "hehao", wstr, wstr_bytes,
+  //         wstr_len);
+
+  //  free(wstr);
+  //  return 0;
+
   if (argc != 3) {
-	  printf(
-		  "Usage:\n"
-		  "  [app] [dll file] [config file(json format)]\n"
-		  "\teg: lmagent factpr.dll test.json\n");
+    printf(
+        "Usage:\n"
+        "  [app] [dll file] [config file(json format)]\n"
+        "\teg: lmagent factpr.dll test.json\n");
     return -1;
   }
-  /*
-    lmapi::lmapi* api = new lmapi::lmapi();
-    lmapi::config* cfg = api->config_open(argv[1]);
-    lmapi::console* console_date = api->console_open(LMAPI_LOG_DATETIME);
-    lmapi::console* console_all = api->console_open(LMAPI_LOG_ALL);
-    // printf("cfg %p\n", cfg);
-    printf("factor name %s\n", cfg->get_string("factor.name").c_str());
-    std::cout << cfg->get_array_size("testing.instruments") << " inst[0] "
-              << cfg->get_array_string("testing.instruments", 0) << " inst[1] "
-              << cfg->get_array_string("testing.instruments", 1) << std::endl;
-
-    api->config_close(cfg);
-
-    console_date->error("date:buxihuan \n");
-    console_date->info("date:shenme shiqing\n");
-    console_date->warning("date:shenme shiqing\n");
-    console_date->debug("date:shenme shiqing\n");
-    console_date->critical("date:shenme shiqing\n");
-
-    console_all->error("all:buxihuan \n");
-    console_all->info("all:shenme shiqing\n");
-    console_all->warning("all:shenme shiqing\n");
-    console_all->debug("all:shenme shiqing\n");
-    console_all->critical("all:shenme shiqing\n");
-
-    console_date->critical(
-        "sql: select top 5 id, IndustryName, UpdateTime from C_EX_Industry\n");
-    lmapi::sql_dataset* ds = api->sql_open(
-        "select top 5 id, IndustryName, UpdateTime "
-        "from C_EX_Industry");
-    if (!ds->get_error().empty())
-      console_date->warning("sql: %s\n", ds->get_error().c_str());
-    console_date->info("sql: rows:%d cols:%d\n", ds->rows(), ds->cols());
-    for (int i = 0; i < ds->rows(); ++i) {
-      for (int j = 0; j < ds->cols(); ++j) {
-        if (j == 0)
-          console_date->info("data[%d, %d]:%s\t", i, j,
-                             ds->get_string(i, j).c_str());
-        else
-          printf("data[%d, %d]:%s\t", i, j, ds->get_string(i, j).c_str());
-      }
-      printf("\n");
-    }
-    api->sql_close(ds);
-
-    lmapi::factor_result* rs = api->result_open("factor1");
-    lmapi_result_info info;
-    memset(&info, 0, sizeof(info));
-    sprintf(info.factor_name, "factor1");
-    sprintf(info.factor_author, "ly123");
-    sprintf(info.factor_date, "20190112");
-    rs->store_factor(info);
-    console_date->info(
-        "result: store_factor \nfactor:\t%s\nauthor:\t%s\ndate:\t%s\n",
-        info.factor_name, info.factor_author, info.factor_date);
-
-    console_date->info("result: store_result 10\n");
-    std::vector<lmapi_result_data> results;
-    for (size_t i = 0; i < 10; ++i) {
-      lmapi_result_data ds;
-      ds.date = 20190111;
-      ds.time = 130320 + i;
-      ds.value = i * 1.23563;
-
-      results.push_back(ds);
-      console_date->info("result[%lu]: value %.15lf\n", i, info.factor_name,
-                         ds.value);
-    }
-    rs->store_result(results);
-
-    api->console_close(console_date);
-    api->console_close(console_all);
-
-    delete api;
-  */
 
   typedef void (*f_run)(const char* cfg);
-  //printf("%ls\n", L"因子计算完成");
 #if defined(_WIN32)
   TCHAR buff[256];
   memset(buff, 0, sizeof(buff));
@@ -112,10 +106,10 @@ int main(int argc, char** argv) {
   HMODULE hmod = LoadLibraryA(argv[1]);
   DWORD err = GetLastError();
   f_run func = (f_run)GetProcAddress(hmod, "factor_run");
-  if(func == nullptr) {
-  printf("from [%p] get factor_run function %p as %d\n", hmod, func, err);
-   return 1;
-   }
+  if (func == nullptr) {
+    printf("from [%p] get factor_run function %p as %d\n", hmod, func, err);
+    return 1;
+  }
 #else
   void* hdll = dlopen(argv[1], RTLD_LAZY);
   f_run func = (f_run)dlsym(hdll, "factor_run");

@@ -1,22 +1,39 @@
 /** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
 
-
 #include <sstream>
 
 #include "lmapi.h"
 #include "lmjson.h"
 #include "lmxml.h"
+
+#include "lmstrencode.h"
+
 namespace lmapi {
 
 struct config_internal {
   json_t* root;
-  std::string name;
+  std::string cfg_name;
   xmlDocPtr doc;
-  // 1:xml 2:json
+  // support 0:xml 1:json
   int type;
   enum config_type { xml_type, json_type };
 
-  config_internal(const std::string& name_) : name(name_) {
+  explicit config_internal(const std::wstring& name) {
+    const struct lmapi_strencode_api* strapi;
+    strapi = lmapi_strencode_capi();
+    char* utf8_name = nullptr;
+    size_t bytes = 0;
+    strapi->wstr_to_utf8(name.c_str(),                        /** from str */
+                         sizeof(wchar_t) * (name.size() + 1), /** from bytes */
+                         &utf8_name,                          /** to str */
+                         &bytes);                             /** to bytes */
+
+    /** placement new */
+    new (this) config_internal(utf8_name);
+    free(utf8_name);
+  }
+
+  explicit config_internal(const std::string& name) : cfg_name(name) {
     json_error_t err;
 
     if (name.find(".xml", 0) != name.npos) {

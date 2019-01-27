@@ -4,11 +4,12 @@ project(factor_test)
 set(EXECUTABLE_OUTPUT_PATH  "${CMAKE_BINARY_DIR}")
 set(LIBRARY_OUTPUT_PATH  "${CMAKE_BINARY_DIR}")
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-        link_directories(${Iconv_LIBRARY_DIRS})
-        link_directories(${xml2_LIBRARY_DIRS})
-        link_directories(${json_LIBRARY_DIRS})
-        link_directories(${gsl_LIBRARY_DIRS})
+# os -- compiler pretarget setting
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    if (MSVC)
+        #link_directories(${EXECUTABLE_OUTPUT_PATH} x64/Release)
+    endif()
 endif()
 
 
@@ -16,9 +17,24 @@ LIST(APPEND factor_test_src factor_main.cpp)
 
 ADD_LIBRARY(factor_test SHARED ${factor_test_src})
 
-target_link_libraries(factor_test lmapi lmlib)
-target_include_directories(factor_test PUBLIC ../../lmapi ../include)
+add_dependencies(factor_test lmapi lmlib)
 
+
+# os -- compiler target setting
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+    target_link_libraries(factor_test lmapi lmlib)
+    target_include_directories(factor_test PUBLIC ../include)
+
+elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    if (MSVC)
+        #target_link_libraries(factor_test lmapi.lib lmlib.lib)
+        target_include_directories(factor_test PUBLIC ../include)
+        #target_link_libraries(factor_test ${Iconv_LIBRARIES} ${xml2_LIBRARIES} )
+        #target_include_directories(factor_test PUBLIC ${Iconv_INCLUDE_DIRS} ${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
+    endif()
+endif()
+
+# posttarget setting
 set(config_file "factor_cfg.json")
 add_custom_command(TARGET factor_test  POST_BUILD
   COMMAND echo "Generating factor config file."
@@ -27,7 +43,3 @@ add_custom_command(TARGET factor_test  POST_BUILD
  )
 
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-    target_link_libraries(factor_test ${Iconv_LIBRARIES} ${xml2_LIBRARIES} )
-    target_include_directories(factor_test PUBLIC ${Iconv_INCLUDE_DIRS} ${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
-endif()

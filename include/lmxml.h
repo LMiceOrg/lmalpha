@@ -31,7 +31,12 @@ static inline xmlNodePtr obj_get(xmlDocPtr doc, const std::string& name) {
   root = xmlDocGetRootElement(doc);
   end = name.find(".", begin);
   key = name.substr(begin, end);
+
   if (xmlStrcmp(root->name, BAD_CAST key.c_str()) == 0) {
+    // only root node ,return
+    if (end == name.npos) return root;
+
+    // find child node
     begin = end + 1;
     do {
       end = name.find(".", begin);
@@ -146,28 +151,58 @@ static inline void get_xml_array(xmlDocPtr doc, const std::string& name,
   xmlNodePtr node;
 
   pos = name.rfind(".", name.size());
-  if (pos != name.npos) {
-    std::string rnode = name.substr(0, pos);
-    std::string anode = name.substr(pos + 1, name.size());
+  if (pos == name.npos) return;
 
-    root = obj_get(doc, name);
-    if (root) {
-      node = root->children;
-      while (node != nullptr) {
-        if (0 == xmlStrcmp(node->name, BAD_CAST anode.c_str())) {
-          xmlChar* xvalue;
-          std::string svalue;
+  std::string rnode = name.substr(0, pos);
+  std::string anode = name.substr(pos + 1, name.size());
 
-          xvalue = xmlNodeGetContent(node);
-          svalue = reinterpret_cast<char*>(xvalue);
-          xmlFree(xvalue);
+  /**  step1 node content array */
+  root = obj_get(doc, rnode);
+  if (root) {
+    node = root->children;
+    while (node != nullptr) {
+      if (0 == xmlStrcmp(node->name, BAD_CAST anode.c_str())) {
+        xmlChar* xvalue;
+        std::string svalue;
 
-          vec->push_back(svalue);
-        }
-        node = node->next;
+        xvalue = xmlNodeGetContent(node);
+        svalue = reinterpret_cast<char*>(xvalue);
+        xmlFree(xvalue);
+
+        vec->push_back(svalue);
       }
+      node = node->next;
     }
   }
+
+  /** step2 node property array */
+  std::string prop = anode;
+  pos = rnode.rfind(".", rnode.size());
+  if (pos == name.npos) return;
+  anode = rnode.substr(pos + 1, rnode.size());
+  rnode = rnode.substr(0, pos);
+
+  root = obj_get(doc, rnode);
+  if (!root) return;
+
+  node = root->children;
+  while (node != nullptr) {
+    if (0 == xmlStrcmp(node->name, BAD_CAST anode.c_str())) {
+      xmlChar* xvalue;
+      xmlAttrPtr attr;
+      std::string svalue;
+
+      attr = attr_get(node, prop);
+      if (attr) {
+        xvalue = xmlGetProp(node, BAD_CAST prop.c_str());
+        svalue = reinterpret_cast<char*>(xvalue);
+        xmlFree(xvalue);
+
+        vec->push_back(svalue);
+      }
+    }
+    node = node->next;
+  }  // while: node
 }
 
 #define get_xml_array_string get_xml_array

@@ -1,35 +1,41 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.11)
 
 project(lmapi)
 set(EXECUTABLE_OUTPUT_PATH  "${CMAKE_BINARY_DIR}")
 set(LIBRARY_OUTPUT_PATH  "${CMAKE_BINARY_DIR}")
 
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang|GNU")
+# os -- compiler pretarget setting
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 
-FIND_LIBRARY(Iconv_LIBRARIES NAMES iconv libiconv)
-FIND_PATH(Iconv_INCLUDE_DIRS iconv.h)
+    pkg_search_module(unixodbc REQUIRED odbc)
+    add_library( unixodbc_static_lib STATIC IMPORTED )
+    SET_TARGET_PROPERTIES(unixodbc_static_lib PROPERTIES IMPORTED_LOCATION
+        "${unixodbc_STATIC_LIBRARY_DIRS}/libodbc.a")
+
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU")
+
+    FIND_LIBRARY(Iconv_LIBRARIES NAMES iconv libiconv)
+    FIND_PATH(Iconv_INCLUDE_DIRS iconv.h)
+
+
+    pkg_search_module(json REQUIRED jansson)
+    pkg_search_module(xml2 REQUIRED libxml-2.0 libxml2 libxml>=2)
+
+    add_library( json_static_lib STATIC IMPORTED )
+    SET_TARGET_PROPERTIES(json_static_lib PROPERTIES IMPORTED_LOCATION
+        "${json_STATIC_LIBRARY_DIRS}/libjansson.a")
+    endif()
+
+elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+
+    endif()
+
+endif()
 
 message("iconv: ${Iconv_INCLUDE_DIRS}")
-pkg_search_module(json REQUIRED jansson)
-pkg_search_module(xml2 REQUIRED libxml-2.0 libxml2 libxml>=2)
-
-add_library( json_static_lib STATIC IMPORTED )
-SET_TARGET_PROPERTIES(json_static_lib PROPERTIES IMPORTED_LOCATION
-    "${json_STATIC_LIBRARY_DIRS}/libjansson.a")
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-        link_directories(${Iconv_LIBRARY_DIRS})
-        link_directories(${xml2_LIBRARY_DIRS})
-        link_directories(${json_LIBRARY_DIRS})
-endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-pkg_search_module(unixodbc REQUIRED odbc)
-add_library( unixodbc_static_lib STATIC IMPORTED )
-SET_TARGET_PROPERTIES(unixodbc_static_lib PROPERTIES IMPORTED_LOCATION
-    "${unixodbc_STATIC_LIBRARY_DIRS}/libodbc.a")
-endif()
-
 message("xml2:${xml2_INCLUDE_DIRS}")
+
 LIST(APPEND lmapi_src lmapi.h
     lmapi.cpp
     lmsql.h
@@ -39,41 +45,60 @@ LIST(APPEND lmapi_src lmapi.h
     lm_config_read.cpp
     lm_console_log.cpp
     lm_result_store.cpp
+    lmstrencode.h lmstrencode.cpp
 #    lmiconv.h lmiconv.cpp
 #    lmlibxml.h lmlibxml.cpp
 )
 
 ADD_LIBRARY(lmapi SHARED ${lmapi_src})
+add_dependencies(lmapi eal_static)
 # shared link
 #target_link_libraries(lmapi  json_static_lib ${unixodbc_LDFLAGS} eal_static)
 # static link
-INCLUDE_DIRECTORIES(${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
-target_link_libraries(lmapi  ${json_LDFLAGS} ${unixodbc_LDFLAGS} eal_static ${xml2_LDFLAGS})
-target_include_directories(lmapi PUBLIC ${unixodbc_INCLUDE_DIRS} ${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
-target_compile_options(lmapi PUBLIC ${json_CFLAGS_OTHER} ${unixodbc_CFLAGS_OTHER})
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+# os -- compiler target setting
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-target_link_libraries(lmapi odbc32)
-
-elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    INCLUDE_DIRECTORIES(${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
+    target_link_libraries(lmapi  ${json_LDFLAGS} ${unixodbc_LDFLAGS} eal_static ${xml2_LDFLAGS})
+    target_include_directories(lmapi PUBLIC ${unixodbc_INCLUDE_DIRS} ${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
+    target_compile_options(lmapi PUBLIC ${json_CFLAGS_OTHER} ${unixodbc_CFLAGS_OTHER})
     target_link_libraries(lmapi ${Iconv_LIBRARIES})
     target_include_directories(lmapi PUBLIC ${Iconv_INCLUDE_DIRS})
     target_compile_options(lmapi PUBLIC ${Iconv_CFLAGS_OTHER})
+
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
+
+    if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+        target_link_directories(lmapi "\$(SolutionDir)${Iconv_LIBRARY_DIRS}"
+            "\$(SolutionDir)${xml2_LIBRARY_DIRS}"
+            "\$(SolutionDir)${json_LIBRARY_DIRS}")
+
+        target_link_libraries(lmapi eal_static
+            ${Iconv_LIBRARIES}
+            ${xml2_LIBRARIES}
+            ${json_LIBRARIES}
+            odbc32)
+
+        target_include_directories(lmapi PUBLIC
+            "\$(SolutionDir)include"
+            "\$(SolutionDir)${xml2_INCLUDE_DIRS}"
+            "\$(SolutionDir)${json_INCLUDE_DIRS}"
+            "\$(SolutionDir)${Iconv_INCLUDE_DIRS}")
+        #target_link_libraries(lmapi Iconv json xml2)
+        #message("lmapi: msvc")
+    elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+        target_link_libraries(lmapi ${Iconv_LIBRARIES})
+        target_include_directories(lmapi PUBLIC ${Iconv_INCLUDE_DIRS})
+        target_compile_options(lmapi PUBLIC ${Iconv_CFLAGS_OTHER})
+    endif()
+
+
 endif()
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    target_link_libraries(lmapi ${Iconv_LIBRARIES})
-    target_include_directories(lmapi PUBLIC ${Iconv_INCLUDE_DIRS})
-    target_compile_options(lmapi PUBLIC ${Iconv_CFLAGS_OTHER})
-endif()
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-    target_link_libraries(lmapi ${Iconv_LIBRARIES} ${xml2_LIBRARIES} ${json_LIBRARIES})
-    target_include_directories(lmapi PUBLIC ${Iconv_INCLUDE_DIRS} ${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS})
-    #target_link_libraries(lmapi Iconv json xml2)
-    message("lmapi: msvc")
-endif()
+# post build action
 
 LIST( APPEND config_file "lmalpha.json"
     "lmalpha.xml")

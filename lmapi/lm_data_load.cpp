@@ -136,8 +136,9 @@ serial_dataset::~serial_dataset() {
   delete se;
 }
 
-std::vector<lmtickdata> serial_dataset::get_tick(const std::string& code) {
-  std::vector<lmtickdata> vec;
+lmtickserial serial_dataset::get_tick(const std::string& code) {
+  lmtickserial serial;
+
   serial_internal* se;
   se = reinterpret_cast<serial_internal*>(pdata);
 
@@ -156,22 +157,29 @@ std::vector<lmtickdata> serial_dataset::get_tick(const std::string& code) {
     int ret;
 
     // 1. get file name
-    date =
-        (now->tm_year + 1900) * 10000 + (now->tm_mon + 1) * 100 + now->tm_mday;
+    date = now->tm_year * 10000 + (now->tm_mon + 1) * 100 + now->tm_mday;
     tick_file = se->get_file(code.c_str(), date);
 
     // 2. check file stat
+    // printf("read %d tick file %s\n", date, tick_file.c_str());
     ret = stat(tick_file.c_str(), &st);
     if (ret == 0) {
+      // printf("read tick file %s\n", tick_file.c_str());
       size_t num = st.st_size / sizeof(lmtickdata);
+
+      // printf("size %lu cnt=%lu  file size %ll\n", sizeof(lmtickdata),
+      // num,st.st_size);
       if (st.st_size == num * sizeof(lmtickdata)) {
         FILE* fp = fopen(tick_file.c_str(), "rb");
         if (fp) {
-          size_t pos = vec.size();
-          vec.resize(vec.size() + num);
+          std::vector<lmtickdata> vec(num);
+          // size_t pos = vec.size();
+          // vec.resize(vec.size() + num);
 
-          fread(&vec[pos], 1, st.st_size, fp);
+          fread(&vec[0], 1, st.st_size, fp);
           fclose(fp);
+          lmtickdayserial ts(date, vec);
+          serial.push_back(ts);
 
         }  // fp
       }
@@ -179,9 +187,10 @@ std::vector<lmtickdata> serial_dataset::get_tick(const std::string& code) {
 
     // 3. next day
     tm_now += 86400;
+
   }  // while: tm_now - tm_end
 
-  return vec;
+  return serial;
 }
 
 std::vector<lmkdata> serial_dataset::get_kdata(const std::string& code) {
@@ -232,14 +241,14 @@ std::vector<lmkdata> serial_dataset::get_kdata(const std::string& code) {
   return vec;
 }
 
-std::vector<std::vector<lmtickdata> > serial_dataset::get_ticks() {
-  std::vector<std::vector<lmtickdata> > vec;
+std::vector<lmtickserial> serial_dataset::get_ticks() {
+  std::vector<lmtickserial> vec;
   serial_internal* se;
   se = reinterpret_cast<serial_internal*>(pdata);
   for (const auto& code : se->instruments) {
-    std::vector<lmtickdata> tick_data;
-    tick_data = get_tick(code);
-    vec.push_back(tick_data);
+    lmtickserial tick_serial;
+    tick_serial = get_tick(code);
+    vec.push_back(tick_serial);
   }
 
   return vec;

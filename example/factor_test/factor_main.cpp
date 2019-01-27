@@ -2,10 +2,12 @@
 #define LM_ALPHA_HIGH_LEVEL_API
 #include "../include/lmalpha.h"
 
-#include <stdio.h>
-
+#include <array>
+#include <iostream>
+#include <thread>
 /** Qt for Mingw32 : cmake parameter
- * cmake -DCMAKE_CXX_COMPILER=e:/msys32/mingw32/bin/g++.exe -DCMAKE_C_COMPILER=e:/msys32/mingw32/bin/gcc.exe -G "MSYS Makefiles"
+ * cmake -DCMAKE_CXX_COMPILER=e:/msys32/mingw32/bin/g++.exe
+ * -DCMAKE_C_COMPILER=e:/msys32/mingw32/bin/gcc.exe -G "MSYS Makefiles"
  */
 
 extern "C" {
@@ -13,7 +15,6 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   LMAPI_INIT(cfg_name);
 
   CRITICAL("factor run\n");
-  
 
   //  DEBUG("test lm\n");
   //  std::vector<double> y;
@@ -55,11 +56,19 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   printf("\n");
 
   // 获取 k线数据
-  
-	  auto p=std::shared_ptr<lmapi::serial_dataset>(
-	  _s_api->serial_open(stock_list, KMIN1, begin, end));
-	  auto stock_kmin1 = p->get_kdatas();
-  //auto stock_kmin1 = ARR_KDATA(stock_list, KMIN1, begin, end);
+  //  auto stock_kmin1 = [_s_api](const std::vector<std::string> &instrument,
+  //                              int tp, int start_date, int end_date) {
+  //    std::shared_ptr<lmapi::serial_dataset> p(
+  //        _s_api->serial_open(instrument, tp, start_date, end_date));
+  //    return p->get_kdatas();
+  //  }(stock_list, KMIN1, begin, end);
+
+  auto stock_kmin1 = ARR_KDATA(stock_list, KMIN1, begin, end);
+
+  //  auto p = std::shared_ptr<lmapi::serial_dataset>(
+  //      _s_api->serial_open(stock_list, KMIN1, begin, end));
+  //  auto stock_kmin1 = p->get_kdatas();
+  // auto stock_kmin1 = ARR_KDATA(stock_list, KMIN1, begin, end);
   // 输出调试信息
   WARNING("stock size %lu\n", stock_kmin1.size());
   for (size_t i = 0; i < stock_kmin1.size(); ++i) {
@@ -70,86 +79,201 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   INFO("%ls", L"读取指数 60分钟k线\n");
   for (size_t i = 0; i < index_list.size(); ++i)
     printf(" %s", index_list[i].c_str());
-  printf("\n"); 
-
+  printf("\n");
+  auto read_begin = TIMENOW();
   auto index_kmin60 = ARR_KDATA(index_list, KMIN60, begin, end);
-  WARNING("index size:%lu\n", index_kmin60.size());
+  auto read_end = TIMENOW();
+  auto read_time = DURATION(read_begin, read_end);
+
+  WARNING("index size:%lu  time %lf\n", index_kmin60.size(), read_time);
+
+  auto tick_list = CFG_ARR_STR("BackTest.tickList");
+  auto ticks = ARR_TICK(tick_list, begin, end);
+  WARNING("tick list size %lu %d %d\n", ticks.size(), begin, end);
+
+  for (size_t pos = 0; pos < ticks.size(); ++pos) {
+    auto const &stock = stock_list[pos];
+    auto const &stock_ticks = ticks[pos];
+    std::cout << "bytes:" << stock_ticks.bytes() << std::endl;
+    for (auto const &day_tick : stock_ticks) {
+      int day = day_tick.first;
+      auto const &day_serial = day_tick.second;
+      for (auto const &tick_data : day_serial) {
+        // 遍历 lmtickdata
+        std::cout << "stock " << stock /* stock */
+                  << " day " << day    /* day */
+                  << " " << tick_data  /* tick */
+                  << std::endl;
+      }
+    }
+  }
 
   INFO("%ls", L"获取每日总股本数据\n");
-  auto query = SQLQUERY(
-      "select top 15 TradingDay"
-      ",SecuCode"
-      ",Ashares"
-      " from General.dbo.DailyQuote"
-      " where  Flg =1 and "
-      " (TradingDay between '2017-01-01' and '2018-12-31');");
-  INFO("%ls %d\n", L"股本数据行数", query->rows());
-  if (!query->get_error().empty()) {
-    ERROR("%s\n", query->get_error().c_str());
-  }
-  for (int i = 0; i < query->rows(); ++i) {
-    for (int j = 0; j < query->cols(); ++j) {
-      printf("  %s,", query->get_string(i, j).c_str());
-    }
-    printf("\n");
-  }
-  INFO("%ls", L"计算总市值的60分钟线\n");
-  ARR_DBL_LIST(MktCap_Min_60);
+  //  auto query = SQLQUERY(
+  //      "select top 15 TradingDay"
+  //      ",SecuCode"
+  //      ",Ashares"
+  //      " from General.dbo.DailyQuote"
+  //      " where  Flg =1 and "
+  //      " (TradingDay between '2017-01-01' and '2018-12-31');");
+  //  INFO("%ls %d\n", L"股本数据行数", query->rows());
+  //  if (!query->get_error().empty()) {
+  //    ERROR("%s\n", query->get_error().c_str());
+  //  }
+  //  for (int i = 0; i < query->rows(); ++i) {
+  //    for (int j = 0; j < query->cols(); ++j) {
+  //      printf("  %s,", query->get_string(i, j).c_str());
+  //    }
+  //    printf("\n");
+  //  }
+  //  INFO("%ls", L"计算总市值的60分钟线\n");
+  //  ARR_DBL_LIST(MktCap_Min_60);
 
   DEBUG("%ls", L"3. 数据清洗\n");
   DEBUG("%ls", L"4. 因子计算\n");
-  std::minstd_rand r;
+
   PREPARE_RESULT(result_list, stock_list);
 
-  auto tstart = TIMENOW();
-  for (size_t i = 0; i < stock_list.size(); ++i) {
-    const auto &stock = stock_list[i];
-    const auto &stock_kdata = stock_kmin1[i];
-    auto &result_dataset = result_list[i];
-    if (stock_kdata.size() < 20) continue;
-    INFO("%ls %s\n", L"计算 百分比变动", stock.c_str());
-    for (std::vector<lmkdata>::const_iterator bar = stock_kdata.begin() + 20;
-         bar != stock_kdata.end(); ++bar) {
-      auto bar20 = bar - 20;
+  /** 定义求解函数 */
+  auto factor_solver = [&](size_t count,     /** 回归序列长度 */
+                           size_t task_rank, /** 当前任务ID */
+                           size_t task_size) /** 任务总数 */
+      -> void {
+    std::minstd_rand r;                               /** 随机数生成器*/
+    size_t p_size = 2;                                /** 回归变量个数 */
+    std::vector<double> stock_pct(count);             /** 数组 stock_pct */
+    std::vector<double> index_pct(count * p_size, 1); /** 数组 index_pct */
 
-      std::vector<double> stock_pct(20);
-      int pos = 0;
-      for (auto it = bar20; it != bar; ++it, ++pos) {
-        stock_pct.push_back((it->closePrice - it->preClosePrice) /
-                            it->preClosePrice);
+    auto solver = LMSOLVER(count, p_size); /** 回归求解器 */
+    const double *y_val = &stock_pct[0];   /** 回归 y值 */
+    const double *x_val = &index_pct[0];   /** 回归 x值 */
+
+    /** 当前任务 开始计算位置 */
+    size_t stock_begin = task_rank * stock_list.size() / task_size;
+    /** 当前任务 结束计算位置 */
+    size_t stock_end = (task_rank + 1) * stock_list.size() / task_size;
+    for (size_t i = stock_begin; i < stock_end; ++i) {
+      auto const &stock = stock_list[i];
+      auto const &stock_kdata = stock_kmin1[i];
+      auto &result_dataset = result_list[i];
+      if (stock_kdata.size() < count) continue;
+      // INFO(" %ls code: %s\n", L"计算 百分比变动", stock.c_str());
+      // std::remove_reference<decltype(stock_kdata)>::type::const_iterator bar;
+      // std::decay<decltype(stock_kdata)>::type::const_iterator bar;
+      // for (size_t j = 0; j < 1500; ++j)
+      for (auto bar = stock_kdata.begin() + count; /** 取前step个bar */
+           bar != stock_kdata.end();               /** 直到序列结束 */
+           ++bar) {                                /** 步长 1 */
+        auto bar20 = bar - count;
+
+        // std::vector<double> stock_pct(count);
+        int pos = 0;
+        for (auto it = bar20; it != bar; ++it, ++pos) {
+          //  替换 stock_pct.push_back
+          stock_pct[pos] =
+              ((it->closePrice - it->preClosePrice) / it->preClosePrice);
+        }
+        // std::vector<double> index_pct(count);
+        for (size_t idx = 0; idx < count * p_size; idx += p_size) {
+          // 第0列 截距参数 总是为1
+          // index_pct[idx] = 1;
+
+          // 第1列 设置x1参数
+          // 测试使用 设置随机数作为index
+          index_pct[idx + 1] = (r() / 1e10);
+        }
+
+        // double rsq1 = 0;
+        // lm(&stock_pct[0], &index2_pct[0], count, count, &rsq1);
+        double rsq = LMRSQ(solver, y_val, x_val);
+        // printf("\t lm=%lf\t LM=%lf\n", rsq1, rsq);
+
+        // 替换result_dataset.push_back
+        auto &result = result_dataset[i];
+        result.date = bar->nDate;
+        result.time = bar->nTimeBegin;
+        result.value = isnormal(rsq) ? rsq : (rsq == 0 ? 0 : 1);
+        // result_dataset.push_back(result);
       }
+    }  // for-end:i
+    LMCLOSE(solver);
+  };
 
-      std::vector<double> index_pct;
-
-      for (size_t idx = 0; idx < 20; ++idx) {
-        index_pct.push_back(r() / 1e10);
-      }
-      double rsq = 0;
-      lm(&index_pct[0], &stock_pct[0], 20, 20, &rsq);
-
-      lmapi_result_data result;
-      result.date = bar->nDate;
-      result.time = bar->nTimeBegin;
-      result.value = rsq;
-      result_dataset.push_back(result);
+  auto clear_result = [&result_list, &stock_list]() -> void {
+    for (size_t i = 0; i < result_list.size(); ++i) {
+      result_list[i].resize(stock_list[i].size());
     }
+  };
+
+  // 第1次 调用计算 步长20
+  auto tstart = TIMENOW();
+  size_t step_count = 20;
+  const size_t thread_size = std::thread::hardware_concurrency();
+  clear_result();
+  printf("thread size %lu\n", thread_size);
+  std::vector<std::unique_ptr<std::thread> > tasks(thread_size);
+  for (size_t i = 0; i < thread_size; ++i) {
+    tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  }
+  for (size_t i = 0; i < thread_size; ++i) {
+    tasks[i]->join();
   }
   auto tend = TIMENOW();
   auto elapsed_seconds = DURATION(tstart, tend);
-  CRITICAL("%ls  %lf\n", L"因子计算时间", elapsed_seconds);
+  CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+
+  // 第2次 调用计算 步长50
+  tstart = TIMENOW();
+  step_count = 50;
+  clear_result();
+  for (size_t i = 0; i < thread_size; ++i) {
+    tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  }
+  for (size_t i = 0; i < thread_size; ++i) {
+    tasks[i]->join();
+  }
+  tend = TIMENOW();
+  elapsed_seconds = DURATION(tstart, tend);
+  CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+
+  // 第3次 调用计算 步长50
+  tstart = TIMENOW();
+  step_count = 100;
+  clear_result();
+  for (size_t i = 0; i < thread_size; ++i) {
+    tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  }
+  for (size_t i = 0; i < thread_size; ++i) {
+    tasks[i]->join();
+  }
+  tend = TIMENOW();
+  elapsed_seconds = DURATION(tstart, tend);
+  CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+
   DEBUG("%ls", L"5. 结果存储\n");
 
-  lmapi::factor_result* p2 = _s_api->result_open(name);
+  // FACTOR_RESULT(name, stock_list, result_list);
 
-  p2->store(stock_list, result_list);
+  //  [_s_api](const std::string &name, const std::vector<std::string>
+  //  &stock_list,
+  //           const std::vector<std::vector<lmapi_result_data> >
+  //           &result_list)
+  //           {
+  //    std::shared_ptr<lmapi::factor_result> p(_s_api->result_open(name));
+  //    p->store(stock_list, result_list);
+  //  }(name, stock_list, result_list);
+  // lmapi::factor_result* p2 = _s_api->result_open(name);
 
-  //[&](const std::string& name, const std::vector<std::string>& stock_list, const std::vector<std::vector<lmapi_result_data> >& result_list) {
-	 // std::shared_ptr<lmapi::factor_result> p(_s_api->result_open(name));
+  //  p2->store(stock_list, result_list);
 
-		//  p->store(stock_list, result_list);
-  //}(name, stock_list, result_list);
+  // [ &](const std::string& name, const std::vector<std::string>& stock_list,
+  // const std::vector<std::vector<lmapi_result_data> >& result_list) {
+  // std::shared_ptr<lmapi::factor_result> p(_s_api->result_open(name));
+
+  //  p->store(stock_list, result_list);
+  // }(name, stock_list, result_list);
   //
-  //FACTOR_RESULT(name, stock_list, result_list);
+  // FACTOR_RESULT(name, stock_list, result_list);
   INFO("%ls", L"因子计算完成\n");
 }
 }

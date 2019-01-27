@@ -230,10 +230,10 @@ int sql_internal::connect(const std::string& conn_string) {
 
     err_msg = exception_utf8(codec, e);
 #if defined(_MSC_VER)
-	printf("err msg %s\n", err_msg.c_str());
+    printf("err msg %s\n", err_msg.c_str());
 
 #endif
-	//printf("sql conn failed %ls\n", e.msg);
+    // printf("sql conn failed %ls\n", e.msg);
 
     return 1;
   }
@@ -263,8 +263,7 @@ void sql_internal::select(const std::string& query) {
   int array_size = 64;
   otl_column_desc* descs;
   size_t col_pos = 0;
-  //otl_long_string ostr(1024);
-  
+  // otl_long_string ostr(1024);
 
   try {
     //  1. open
@@ -291,7 +290,7 @@ void sql_internal::select(const std::string& query) {
     }
 
     //  3. read dataset
-     //printf("read dataset\n");
+    // printf("read dataset\n");
     dataset.clear();
     dataset.reserve(os.get_prefetched_row_count() * col_count);
     col_pos = 0;
@@ -312,7 +311,7 @@ void sql_internal::select(const std::string& query) {
 
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-	  //printf("readvar error\n" );
+    // printf("readvar error\n" );
     err_msg = exception_utf8(codec, e);
   }
 }
@@ -338,8 +337,8 @@ void sql_internal::insert(const std::string& format, const std::string& f1,
   try {
     otl_stream os(128, format.c_str(), *db);
     for (const auto& data : rd) {
-      os << reinterpret_cast<const SQLTCHAR*>(uf1.c_str())
-         << reinterpret_cast<const SQLTCHAR*>(uf2.c_str()) << data.date
+      os << reinterpret_cast<const SQLWCHAR*>(uf1.c_str())
+         << reinterpret_cast<const SQLWCHAR*>(uf2.c_str()) << data.date
          << data.time << data.value;
     }
   } catch (otl_exception& e) {
@@ -395,7 +394,6 @@ static inline sql_variable read_var(otl_stream& os, iconv_t codecs,
   sql_variable var;
   otl_datetime dt;
   otl_long_string ustr;
-
 
   var.type = column.var_dbtype;
   // printf("%s\t%d\n", column.name, column.var_dbtype);

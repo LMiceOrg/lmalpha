@@ -7,16 +7,16 @@
 #include "lmstock.h"
 
 #if defined(_MSC_VER)
-#define LIBICONV_DLL_EXPORTED __declspec(dllexport) 
-#else 
-#define LIBICONV_DLL_EXPORTED 
+#define LIBLMAPI_DLL_EXPORTED __declspec(dllexport)
+#else
+#define LIBLMAPI_DLL_EXPORTED
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** c-api */
+/** C90 - Low Level API */
 
 typedef void* lmapi_t;
 
@@ -139,7 +139,7 @@ void lmapi_sql_close(lmapi_t api, struct lmapi_sql_dataset* ds);
 namespace lmapi {
 
 /** config read */
-class LIBICONV_DLL_EXPORTED config {
+class LIBLMAPI_DLL_EXPORTED config {
  public:
   friend class lmapi;
 
@@ -166,7 +166,7 @@ class LIBICONV_DLL_EXPORTED config {
   void* pdata;
 };
 
-class LIBICONV_DLL_EXPORTED console {
+class LIBLMAPI_DLL_EXPORTED console {
  public:
   friend class lmapi;
   ~console();
@@ -181,7 +181,7 @@ class LIBICONV_DLL_EXPORTED console {
   void* pdata;
 };
 
-class LIBICONV_DLL_EXPORTED sql_dataset {
+class LIBLMAPI_DLL_EXPORTED sql_dataset {
  public:
   friend class lmapi;
   ~sql_dataset();
@@ -201,15 +201,15 @@ class LIBICONV_DLL_EXPORTED sql_dataset {
   void* pdata;
 };
 
-class LIBICONV_DLL_EXPORTED serial_dataset {
+class LIBLMAPI_DLL_EXPORTED serial_dataset {
  public:
   friend class lmapi;
   ~serial_dataset();
 
-  std::vector<lmtickdata> get_tick(const std::string& code);
+  lmtickserial get_tick(const std::string& code);
   std::vector<lmkdata> get_kdata(const std::string& code);
 
-  std::vector<std::vector<lmtickdata> > get_ticks();
+  std::vector<lmtickserial> get_ticks();
   std::vector<std::vector<lmkdata> > get_kdatas();
 
  private:
@@ -219,7 +219,7 @@ class LIBICONV_DLL_EXPORTED serial_dataset {
   void* pdata;
 };
 
-class LIBICONV_DLL_EXPORTED factor_result {
+class LIBLMAPI_DLL_EXPORTED factor_result {
  public:
   friend class lmapi;
   ~factor_result();
@@ -227,7 +227,7 @@ class LIBICONV_DLL_EXPORTED factor_result {
   const std::string& error() const;
 
   int store(const std::vector<std::string>& stocks,
-             const std::vector<std::vector<lmapi_result_data> >& results);
+            const std::vector<std::vector<lmapi_result_data> >& results);
 
   int store_factor(const lmapi_result_info& info);
   int store_result(const std::string& name, const std::string code,
@@ -240,7 +240,7 @@ class LIBICONV_DLL_EXPORTED factor_result {
   std::string factor;
 };
 
-class LIBICONV_DLL_EXPORTED lmapi {
+class LIBLMAPI_DLL_EXPORTED lmapi {
  public:
   lmapi();
   ~lmapi();
