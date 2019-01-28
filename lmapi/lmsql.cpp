@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <cstdarg>
+
 using std::wstring;
 
 #define OTL_UNICODE  // Enable Unicode OTL for ODBC
@@ -240,6 +242,27 @@ void sql_internal::execute(const std::string& query) {
     err_msg = exception_utf8(codec, e);
   }
 }
+void sql_internal::execute_utf8str(const std::string& query,int size, ...) {
+    try {
+        wchar_t *out_str = nullptr;
+        size_t out_bytes = 0;
+        const struct lmapi_strencode_api* api = lmapi_strencode_capi();
+        
+        otl_stream os(1, query.c_str(), *db);
+        std::va_list va;
+        va_start(va, size);
+        for (int i = 0; i < size; ++i) {
+            const char* param = va_arg(va, const char*);
+            api->utf8_to_wstr(param, strlen(param) + 1, &out_str, &out_bytes);
+
+            os << out_str;
+        }
+        va_end(va);
+        free(out_str);
+    } catch(otl_exception& e){ 
+        err_msg = exception_utf8(codec, e);
+    }
+}
 
 void sql_internal::select(const std::string& query) {
   int array_size = 64;
@@ -317,7 +340,7 @@ void sql_internal::insert(const std::string& format, const std::string& f1,
   uf1 = utf8_utf16(sqlstr_codec, f1.c_str());
   uf2 = utf8_utf16(sqlstr_codec, f2.c_str());
   try {
-      printf("f1 %s f2 %s %lu\n", f1.c_str(), f2.c_str(), rd.size());
+      //printf("f1 %s f2 %s %lu\n", f1.c_str(), f2.c_str(), rd.size());
       
     otl_stream os(128, format.c_str(), *db);
     for (const auto& data : rd) {

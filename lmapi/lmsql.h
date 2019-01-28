@@ -63,6 +63,8 @@ struct sql_internal {
 
   void execute(const std::string& query);
 
+  void execute_utf8str(const std::string & query, int size, ...);
+
   void insert(const std::string& format, const std::string& f1,
               const std::string& f2, const std::vector<lmapi_result_data>& rd);
 };

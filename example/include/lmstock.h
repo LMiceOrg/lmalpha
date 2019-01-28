@@ -259,8 +259,8 @@ struct LMBaseVector<TSubClass, true> : public LMVectorData<TSubClass> {
 template <class TSubClass>
 struct LMBaseVector<TSubClass, false> : public LMVectorData<TSubClass> {
   typedef LMBaseVector<TSubClass, false> this_type;
-  inline int bytes() const {
-    int sz = sizeof(int) * 2;
+  inline size_t bytes() const {
+    size_t sz = sizeof(int) * 2;
     const this_type* p = static_cast<const this_type*>(this);
     for (size_t i = 0; i < p->size(); ++i) {
       const TSubClass* pobj = &(*p)[i];

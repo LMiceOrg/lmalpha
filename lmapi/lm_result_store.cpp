@@ -118,21 +118,23 @@ int factor_result::store_factor(const lmapi_result_info& info) {
     // 2. update factor info
     memset(query, 0, sizeof(query));
     snprintf(query, sizeof(query),
-             "update alpha.dbo.factor_info set "
-             "author='%s', "
-             "last_update='%s' "
-             "where name ='%s' ",
+        "update alpha.dbo.factor_info set "
+        "author=:author<char[32],in>, "
+        "last_update=:date<char[32],in> "
+        "where name =:name<char[32],in> ");
+    sql->execute_utf8str(query, 3,
              info.factor_author, info.factor_date, info.factor_name);
-    sql->execute(query);
+    
   } else {
     //  3. insert factor info
     memset(query, 0, sizeof(query));
     snprintf(query, sizeof(query),
-             "insert into alpha.dbo.factor_info values('%s', "
-             "'%s', "
-             "'%s') ",
+        "insert into alpha.dbo.factor_info values(:name<char[32],in>, "
+        ":author<char[32],in>, "
+        ":date<char[32],in>) ");
+    sql->execute_utf8str(query, 3, 
              info.factor_name, info.factor_author, info.factor_date);
-    sql->execute(query);
+    
   }
 
   if (!sql->err_msg.empty())
@@ -152,22 +154,23 @@ int factor_result::store_result(const std::string& name, const std::string code,
   sql = reinterpret_cast<sql_internal*>(pdata);
 
   //  1. check factor result exists
-  memset(query, 0, sizeof(query));
+ /* memset(query, 0, sizeof(query));
   snprintf(query, sizeof(query),
            "select top 1 name from alpha.dbo.factor_result where "
            "name='%s' and code='%s'",
            name.c_str(), code.c_str());
   sql->select(query);
-  exists = sql->row_count;
+  exists = sql->row_count;*/
 
   //  2. delete existing result
-  if (exists > 0) {
+   {
     memset(query, 0, sizeof(query));
     snprintf(query, sizeof(query),
-             "delete from alpha.dbo.factor_result where "
-             "name='%s' and code='%s'",
+        "delete from alpha.dbo.factor_result where "
+        "name=:name<char[32],in> and code=:code<char[32],in>");
+    sql->execute_utf8str(query, 2,
              name.c_str(), code.c_str());
-    sql->execute(query);
+    
   }
 
   //  3. insert factor result

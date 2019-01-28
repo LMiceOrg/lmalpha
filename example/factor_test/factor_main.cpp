@@ -198,6 +198,7 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
         // result_dataset.push_back(result);
 
         // printf("\tresult dt %d%d %lf\n",result.date, result.time, result.value);
+
       }  // for-end: bar_pos
     }  // for-end:i
   };
@@ -264,26 +265,7 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
 
   FACTOR_RESULT(name, stock_list, result_list);
 
-  //  [_s_api](const std::string &name, const std::vector<std::string>
-  //  &stock_list,
-  //           const std::vector<std::vector<lmapi_result_data> >
-  //           &result_list)
-  //           {
-  //    std::shared_ptr<lmapi::factor_result> p(_s_api->result_open(name));
-  //    p->store(stock_list, result_list);
-  //  }(name, stock_list, result_list);
-  // lmapi::factor_result* p2 = _s_api->result_open(name);
-
-  //  p2->store(stock_list, result_list);
-
-  // [ &](const std::string& name, const std::vector<std::string>& stock_list,
-  // const std::vector<std::vector<lmapi_result_data> >& result_list) {
-  // std::shared_ptr<lmapi::factor_result> p(_s_api->result_open(name));
-
-  //  p->store(stock_list, result_list);
-  // }(name, stock_list, result_list);
-  //
-  // FACTOR_RESULT(name, stock_list, result_list);
   INFO("%ls", L"因子计算完成\n");
 }
-}
+
+}  // extern C
