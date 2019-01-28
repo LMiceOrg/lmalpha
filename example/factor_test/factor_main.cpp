@@ -161,14 +161,15 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
       // std::remove_reference<decltype(stock_kdata)>::type::const_iterator bar;
       // std::decay<decltype(stock_kdata)>::type::const_iterator bar;
       // for (size_t j = 0; j < 1500; ++j)
-      for (auto bar = stock_kdata.begin() + count; /** 取前step个bar */
-           bar != stock_kdata.end();               /** 直到序列结束 */
-           ++bar) {                                /** 步长 1 */
-        auto bar20 = bar - count;
+      size_t result_idx = 0;
+      for(size_t bar_pos = count; bar_pos <= stock_kdata.size(); ++bar_pos, ++result_idx)
+       {                                /** 步长 1 */
+        auto bar_step_begin = stock_kdata.begin() + bar_pos - count;
+        auto bar_step_end = stock_kdata.begin() + bar_pos;
 
         // std::vector<double> stock_pct(count);
         int pos = 0;
-        for (auto it = bar20; it != bar; ++it, ++pos) {
+        for (auto it = bar_step_begin; it != bar_step_end; ++it, ++pos) {
           //  替换 stock_pct.push_back
           stock_pct[pos] =
               ((it->closePrice - it->preClosePrice) / it->preClosePrice);
@@ -189,19 +190,28 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
         // printf("\t lm=%lf\t LM=%lf\n", rsq1, rsq);
 
         // 替换result_dataset.push_back
-        auto &result = result_dataset[i];
-        result.date = bar->nDate;
-        result.time = bar->nTimeBegin;
+        auto &result = result_dataset[result_idx];
+        result.date = bar_step_begin->nDate;
+        result.time = bar_step_begin->nTimeBegin;
         result.value = isnormal(rsq) ? rsq : (rsq == 0 ? 0 : 1);
+        
         // result_dataset.push_back(result);
-      }
+
+        // printf("\tresult dt %d%d %lf\n",result.date, result.time, result.value);
+      }  // for-end: bar_pos
     }  // for-end:i
-    LMCLOSE(solver);
   };
 
-  auto clear_result = [&result_list, &stock_list]() -> void {
+  auto clear_result = [&result_list, &stock_kmin1](size_t count) -> void {
     for (size_t i = 0; i < result_list.size(); ++i) {
-      result_list[i].resize(stock_list[i].size());
+        if (stock_kmin1[i].size() < count) {
+            result_list[i].resize(0);
+        } 
+        else
+        {
+            result_list[i].resize(stock_kmin1[i].size() - count + 1);
+        }
+      
     }
   };
 
@@ -209,7 +219,7 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   auto tstart = TIMENOW();
   size_t step_count = 20;
   const size_t thread_size = std::thread::hardware_concurrency();
-  clear_result();
+  clear_result(step_count);
   printf("thread size %lu\n", thread_size);
   std::vector<std::unique_ptr<std::thread> > tasks(thread_size);
   for (size_t i = 0; i < thread_size; ++i) {
@@ -223,36 +233,36 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
 
   // 第2次 调用计算 步长50
-  tstart = TIMENOW();
-  step_count = 50;
-  clear_result();
-  for (size_t i = 0; i < thread_size; ++i) {
-    tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
-  }
-  for (size_t i = 0; i < thread_size; ++i) {
-    tasks[i]->join();
-  }
-  tend = TIMENOW();
-  elapsed_seconds = DURATION(tstart, tend);
-  CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+  //tstart = TIMENOW();
+  //step_count = 50;
+  //clear_result(step_count);
+  //for (size_t i = 0; i < thread_size; ++i) {
+  //  tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  //}
+  //for (size_t i = 0; i < thread_size; ++i) {
+  //  tasks[i]->join();
+  //}
+  //tend = TIMENOW();
+  //elapsed_seconds = DURATION(tstart, tend);
+  //CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
 
   // 第3次 调用计算 步长50
-  tstart = TIMENOW();
-  step_count = 100;
-  clear_result();
-  for (size_t i = 0; i < thread_size; ++i) {
-    tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
-  }
-  for (size_t i = 0; i < thread_size; ++i) {
-    tasks[i]->join();
-  }
-  tend = TIMENOW();
-  elapsed_seconds = DURATION(tstart, tend);
-  CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+  //tstart = TIMENOW();
+  //step_count = 100;
+  //clear_result(step_count);
+  //for (size_t i = 0; i < thread_size; ++i) {
+  //  tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  //}
+  //for (size_t i = 0; i < thread_size; ++i) {
+  //  tasks[i]->join();
+  //}
+  //tend = TIMENOW();
+  //elapsed_seconds = DURATION(tstart, tend);
+  //CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
 
   DEBUG("%ls", L"5. 结果存储\n");
 
-  // FACTOR_RESULT(name, stock_list, result_list);
+  FACTOR_RESULT(name, stock_list, result_list);
 
   //  [_s_api](const std::string &name, const std::vector<std::string>
   //  &stock_list,

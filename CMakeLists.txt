@@ -65,12 +65,12 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
     if (MSVC)
         add_definitions("-DUNICODE -D_UNICODE")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++11")
-        set(CMAKE_C_FLAGS   "${CMAKE_CXX_FLAGS} /std:c90")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++14")
+        # set(CMAKE_C_FLAGS   "${CMAKE_CXX_FLAGS} /std:c90")
 
-        SET(json_INCLUDE_DIRS "thirdpart/jansson/include")
+        SET(json_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/jansson/include")
         SET(json_LIBRARIES jansson)
-        SET(json_LIBRARY_DIRS "thirdpart/jansson/x64/Release/")
+        SET(json_LIBRARY_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/jansson/x64/Release/")
 
     #    add_library(json STATIC IMPORTED) # or STATIC instead of SHARED
     #    set_property(TARGET json PROPERTY
@@ -79,9 +79,9 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/jansson/include"
     #    )
 
-        SET(Iconv_INCLUDE_DIRS "thirdpart/iconv/include")
+        SET(Iconv_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/iconv/include")
         SET(Iconv_LIBRARIES iconv)
-        SET(Iconv_LIBRARY_DIRS "thirdpart/iconv/x64/Release")
+        SET(Iconv_LIBRARY_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/iconv/x64/Release")
 
     #    add_library(Iconv SHARED IMPORTED) # or STATIC instead of SHARED
     #    set_property(TARGET Iconv PROPERTY
@@ -90,9 +90,9 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/iconv/include"
     #    )
 
-        SET(xml2_INCLUDE_DIRS "thirdpart/libxml2/include")
+        SET(xml2_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/libxml2/include")
         SET(xml2_LIBRARIES libxml2)
-        SET(xml2_LIBRARY_DIRS "thirdpart/libxml2/x64/Release")
+        SET(xml2_LIBRARY_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/libxml2/x64/Release")
 
     #    add_library(xml2 SHARED IMPORTED) # or STATIC instead of SHARED
     #    set_property(TARGET xml2 PROPERTY
@@ -101,9 +101,9 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #      INTERFACE_INCLUDE_DIRECTORIES "d:/thirdpart/libxml2"
     #    )
 
-        SET(gsl_INCLUDE_DIRS "thirdpart/gsl/include")
+        SET(gsl_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/gsl/include")
         SET(gsl_LIBRARIES gsl cblas)
-        SET(gsl_LIBRARY_DIRS "thirdpart/gsl/x64/Release")
+        SET(gsl_LIBRARY_DIRS "${CMAKE_SOURCE_DIR}/thirdpart/gsl/x64/Release")
 
     #    add_library(gsl STATIC IMPORTED) # or STATIC instead of SHARED
     #    set_property(TARGET gsl PROPERTY

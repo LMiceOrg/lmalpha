@@ -26,14 +26,14 @@ extern int lm_run_file(const char* name);
 
 int main(int argc, char** argv) {
   setlocale(LC_ALL, "");
-  lmapi::lmkdatas kd;
-  std::cout << kd.size() << std::endl;
+  //lmapi::lmkdatas kd;
+  //std::cout << kd.size() << std::endl;
 
-  char buff[16];
-  kd.pack(buff, 16);
-  printf("%lu  %lu\n", *(size_t*)buff, *(size_t*)(buff + sizeof(size_t)));
-  kd.unpack(buff, 16);
-  printf("%lu  %lu\n", *(size_t*)buff, *(size_t*)(buff + sizeof(size_t)));
+  //char buff[16];
+  //kd.pack(buff, 16);
+  //printf("%lu  %lu\n", *(size_t*)buff, *(size_t*)(buff + sizeof(size_t)));
+  //kd.unpack(buff, 16);
+  //printf("%lu  %lu\n", *(size_t*)buff, *(size_t*)(buff + sizeof(size_t)));
 
   //  auto api = new lmapi::lmapi();
   //  auto cfg = api->config_open("test_node.xml");
@@ -117,5 +117,6 @@ int main(int argc, char** argv) {
 #endif
 
   func(argv[2]);
+  getchar();
   return 0;
 }

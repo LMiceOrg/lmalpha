@@ -67,25 +67,28 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     target_include_directories(lmapi PUBLIC ${Iconv_INCLUDE_DIRS})
     target_compile_options(lmapi PUBLIC ${Iconv_CFLAGS_OTHER})
 
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 
 
-    if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-        target_link_directories(lmapi "\$(SolutionDir)${Iconv_LIBRARY_DIRS}"
-            "\$(SolutionDir)${xml2_LIBRARY_DIRS}"
-            "\$(SolutionDir)${json_LIBRARY_DIRS}")
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+		message("lmapi libs: ${xml2_INCLUDE_DIRS} ${json_INCLUDE_DIRS} ${Iconv_INCLUDE_DIRS}")
+        target_link_directories(lmapi PUBLIC 
+			"${Iconv_LIBRARY_DIRS}"
+            "${xml2_LIBRARY_DIRS}"
+            "${json_LIBRARY_DIRS}")
 
-        target_link_libraries(lmapi eal_static
+        target_link_libraries(lmapi 
+			eal_static
             ${Iconv_LIBRARIES}
             ${xml2_LIBRARIES}
             ${json_LIBRARIES}
             odbc32)
 
         target_include_directories(lmapi PUBLIC
-            "\$(SolutionDir)include"
-            "\$(SolutionDir)${xml2_INCLUDE_DIRS}"
-            "\$(SolutionDir)${json_INCLUDE_DIRS}"
-            "\$(SolutionDir)${Iconv_INCLUDE_DIRS}")
+            "${CMAKE_SOURCE_DIR}/include"
+            "${xml2_INCLUDE_DIRS}"
+            "${json_INCLUDE_DIRS}"
+            "${Iconv_INCLUDE_DIRS}")
         #target_link_libraries(lmapi Iconv json xml2)
         #message("lmapi: msvc")
     elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
@@ -102,6 +105,10 @@ endif()
 
 LIST( APPEND config_file "lmalpha.json"
     "lmalpha.xml")
+
+# os -- compiler target setting
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
 #add_custom_command(TARGET lmapi  POST_BUILD
 #  COMMAND echo "Generating alpha framework config file."
 #  COMMAND ${CMAKE_COMMAND} -E copy ${config_file} "${CMAKE_BINARY_DIR}/${config_file}"
@@ -123,3 +130,5 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 
 )
+
+endif()

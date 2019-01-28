@@ -46,7 +46,7 @@ void forceinline usleep(int usec){
 int forceinline ctime_r(const time_t* tm, char* time)
 {
 #ifdef _WIN32
-    time = ctime(tm);
+    ctime_s(time, 26, tm);
     return 0;
 #else
     return ctime_s(time, 26, tm);

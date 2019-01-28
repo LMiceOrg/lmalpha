@@ -39,6 +39,7 @@ using std::wstring;
 #include "lmsql.h"
 
 #include "lmapi.h"
+#include "lmstrencode.h"
 
 #if defined(_WIN32)
 #define WIN32_MEAN_AND_LEAN
@@ -153,36 +154,17 @@ static inline std::string exception_utf8(iconv_t codec,
 }
 
 static inline std::string utf8_utf16(iconv_t codec, const char* str) {
-  size_t in_size;
-  size_t out_size;
-  size_t ret;
-  char* in;
-  char* out;
-  char buff[1024];
-  std::string retstr;
-
-  in = const_cast<char*>(str);
-  in_size = strlen(str);
-  out_size = in_size * 3 + 2;
-
-  if (out_size < sizeof(buff)) {
-    out = buff;
-    ret = iconv(codec, &in, &in_size, &out, &out_size);
-    if (ret != -1) {
-      retstr.insert(retstr.begin(), buff, buff + ret);
+    std::string retstr;
+    wchar_t *out_str = nullptr;
+    size_t out_bytes = 0;
+    const struct lmapi_strencode_api* api =lmapi_strencode_capi();
+    api->utf8_to_wstr(str, strlen(str) + 1, &out_str, &out_bytes);
+    if (out_str) {
+        const char*p = reinterpret_cast<const char*>(out_str);
+        
+        retstr.insert(retstr.begin(), p, p + out_bytes);
+        free(out_str);
     }
-
-  } else {
-    char* large_buff = reinterpret_cast<char*>(malloc(out_size));
-    memset(large_buff, 0, out_size);
-    out = large_buff;
-    ret = iconv(codec, &in, &in_size, &out, &out_size);
-    if (ret != -1) {
-      retstr.insert(retstr.begin(), large_buff, large_buff + ret);
-    }
-    free(large_buff);
-  }
-
   return retstr;
 }
 
@@ -335,6 +317,8 @@ void sql_internal::insert(const std::string& format, const std::string& f1,
   uf1 = utf8_utf16(sqlstr_codec, f1.c_str());
   uf2 = utf8_utf16(sqlstr_codec, f2.c_str());
   try {
+      printf("f1 %s f2 %s %lu\n", f1.c_str(), f2.c_str(), rd.size());
+      
     otl_stream os(128, format.c_str(), *db);
     for (const auto& data : rd) {
       os << reinterpret_cast<const SQLWCHAR*>(uf1.c_str())

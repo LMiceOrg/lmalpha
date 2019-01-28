@@ -7,10 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define LMAPI_UTF16LE_TYPE "UTF-16LE"
+#define LMAPI_UTF32LE_TYPE "UTF-32LE"
 #ifdef _WIN32
-#define LMAPI_WCHAR_TYPE "UTF-16LE"
+#define LMAPI_WCHAR_TYPE LMAPI_UTF16LE_TYPE
 #else
-#define LMAPI_WCHAR_TYPE "UTF-32LE"
+#define LMAPI_WCHAR_TYPE LMAPI_UTF32LE_TYPE
 #endif
 
 #define LMAPI_GBK_TYPE "GBK"
@@ -285,13 +287,13 @@ class lmapi_tls_icodes {
     tls_ic[3] = iconv_open(LMAPI_GBK_TYPE, LMAPI_WCHAR_TYPE);
     tls_ic[4] = iconv_open(LMAPI_WCHAR_TYPE, LMAPI_GBK_TYPE);
     tls_ic[5] = iconv_open(LMAPI_UTF8_TYPE, LMAPI_GBK_TYPE);
-    printf("thread init tls icodes\n");
+    //printf("thread init tls icodes\n");
   }
   ~lmapi_tls_icodes() {
     for (size_t i = 0; i < sizeof(tls_ic) / sizeof(iconv_t); ++i) {
       iconv_close(tls_ic[i]);
     }
-    printf("thread delete tls icodes\n");
+    //printf("thread delete tls icodes\n");
   }
   inline iconv_t operator[](size_t pos) const { return tls_ic[pos]; }
 

@@ -32,11 +32,11 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 
 elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
-        target_link_directories(lmlib PUBLIC  "\$(SolutionDir)${gsl_LIBRARY_DIRS}")
+        target_link_directories(lmlib PUBLIC  "${gsl_LIBRARY_DIRS}")
         target_link_libraries(lmlib   gsl cblas )
-        target_include_directories(lmlib PUBLIC "\$(SolutionDir)${gsl_INCLUDE_DIRS}" )
+        target_include_directories(lmlib PUBLIC "${gsl_INCLUDE_DIRS}" )
         #set_property(TARGET lmlib PROPERTY
-        #    INTERFACE_INCLUDE_DIRECTORIES "$(SolutionDir)${gsl_INCLUDE_DIRS}")
+        #    INTERFACE_INCLUDE_DIRECTORIES "${gsl_INCLUDE_DIRS}")
 
 
     else()
