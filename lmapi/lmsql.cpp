@@ -43,16 +43,16 @@ using std::wstring;
 #include "lmapi.h"
 #include "lmstrencode.h"
 
-#if defined(_WIN32)
-#define WIN32_MEAN_AND_LEAN
-#include <Windows.h>
-
-int togbk(const wchar_t* in, char* out, int out_len) {
-  return WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, in, -1, out, out_len,
-                             NULL, FALSE);
-}
-
-#endif
+//#if defined(_WIN32)
+//#define WIN32_MEAN_AND_LEAN
+//#include <Windows.h>
+//
+//int togbk(const wchar_t* in, char* out, int out_len) {
+//  return WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, in, -1, out, out_len,
+//                             NULL, FALSE);
+//}
+//
+//#endif
 
 namespace lmapi {
 
@@ -84,63 +84,29 @@ static inline size_t utf16_size(const SQLWCHAR* str) {
 }
 
 static inline std::string utf16_utf8(iconv_t codec, const unsigned char* str) {
-  std::ostringstream oss;
-  char buff[1024];
-  char* in;
-  char* out;
-  size_t in_size;
-  size_t out_size = 1024;
-  size_t ret;
-  std::string utf8_string;
+    const char* from = reinterpret_cast<const char*>(str);
+    size_t from_bytes = utf16_size(str)*sizeof(uint16_t)+2;
+    char * to = nullptr;
+    size_t to_bytes = 0;
+    std::string utf8_string;
 
-  in = reinterpret_cast<char*>(const_cast<unsigned char*>(str));
-  in_size = utf16_size(str);
-  if (in_size < 256) {
-    in_size *= 2;
-    memset(buff, 0, 1024);
-    out = buff;
-    ret = iconv(codec, &in, &in_size, &out, &out_size);
-    utf8_string = buff;
-  } else {
-    out_size = in_size * 4;
-    in_size *= 2;
-    char* large_buff = reinterpret_cast<char*>(malloc(out_size));
-    memset(large_buff, 0, out_size);
-    out = buff;
-    utf8_string = large_buff;
-    free(large_buff);
-  }
+    lmapi_strencode_capi()->utf16_to_utf8(from, from_bytes, &to, &to_bytes);
+    utf8_string.insert(utf8_string.begin(), to, to + to_bytes);
+    free(to);
 
   return utf8_string;
 }
 
 static inline std::string utf16_utf8(iconv_t codec, const SQLWCHAR* str) {
-  std::ostringstream oss;
-  char buff[1024];
-  char* in;
-  char* out;
-  size_t in_size;
-  size_t out_size = 1024;
-  size_t ret;
-  std::string utf8_string;
+    const char* from = reinterpret_cast<const char*>(str);
+    size_t from_bytes = utf16_size(str) * sizeof(uint16_t) + 2;
+    char * to = nullptr;
+    size_t to_bytes = 0;
+    std::string utf8_string;
 
-  in = reinterpret_cast<char*>(const_cast<SQLWCHAR*>(str));
-  in_size = utf16_size(str);
-  if (in_size < 256) {
-    memset(buff, 0, 1024);
-    out = buff;
-    in_size *= 2;
-    ret = iconv(codec, &in, &in_size, &out, &out_size);
-    utf8_string = buff;
-  } else {
-    out_size = in_size * 4;
-    in_size *= 2;
-    char* large_buff = reinterpret_cast<char*>(malloc(out_size));
-    memset(large_buff, 0, out_size);
-    out = buff;
-    utf8_string = large_buff;
-    free(large_buff);
-  }
+    lmapi_strencode_capi()->utf16_to_utf8(from, from_bytes, &to, &to_bytes);
+    utf8_string.insert(utf8_string.begin(), to, to + to_bytes);
+    free(to);
 
   return utf8_string;
 }
@@ -155,17 +121,58 @@ static inline std::string exception_utf8(iconv_t codec,
   return oss.str();
 }
 
+static inline std::string exception_utf8(const otl_exception& e) {
+    std::string str;
+    const char* from =nullptr;
+    char* to = nullptr;
+    size_t from_bytes = 0;
+    size_t to_bytes = 0;
+    auto strapi = lmapi_strencode_capi();
+#if _WIN32
+    auto cvt_locale = strapi->wstr_to_gbk;
+#else
+    auto cvt_locale = strapi->utf16_to_utf8;
+#endif // _WIN32
+
+
+    /** reserve 128 bytes */
+    str.reserve(128);
+
+    from = reinterpret_cast<const char*>(e.msg);
+    from_bytes = utf16_size(e.msg)*sizeof(uint16_t)+2;
+    cvt_locale(from, from_bytes, &to, &to_bytes);
+    if(to)
+        str += to;
+    str += "|";
+    str += e.stm_text;
+    str += "|";
+
+    from = reinterpret_cast<const char*>(e.sqlstate);
+    from_bytes = utf16_size(e.sqlstate)*sizeof(uint16_t)+2;
+    cvt_locale(from, from_bytes, &to, &to_bytes);
+    if(to)
+        str += to;
+    str += "|";
+    str += e.var_info;
+    // str += "\n";
+
+    /** clean encoding cache */
+    if(to)
+        free(to);
+
+    return str;
+    
+}
+
 static inline std::string utf8_utf16(iconv_t codec, const char* str) {
     std::string retstr;
-    wchar_t *out_str = nullptr;
-    size_t out_bytes = 0;
+    char* to_str = nullptr;
+    size_t to_bytes = 0;
     const struct lmapi_strencode_api* api =lmapi_strencode_capi();
-    api->utf8_to_wstr(str, strlen(str) + 1, &out_str, &out_bytes);
-    if (out_str) {
-        const char*p = reinterpret_cast<const char*>(out_str);
-        
-        retstr.insert(retstr.begin(), p, p + out_bytes);
-        free(out_str);
+    api->utf8_to_wstr(str, strlen(str) + 1, &to_str, &to_bytes);
+    if (to_str) {
+        retstr.insert(retstr.begin(), to_str, to_str + to_bytes);
+        free(to_str);
     }
   return retstr;
 }
@@ -212,9 +219,9 @@ int sql_internal::connect(const std::string& conn_string) {
   } catch (otl_exception& e) {
     // intercept OTL exceptions
 
-    err_msg = exception_utf8(codec, e);
+    err_msg = exception_utf8(e);
 #if defined(_MSC_VER)
-    printf("err msg %s\n", err_msg.c_str());
+    printf("sql connect error %s\n", err_msg.c_str());
 
 #endif
     // printf("sql conn failed %ls\n", e.msg);
@@ -229,7 +236,7 @@ void sql_internal::disconnect(void) {
     db->logoff();
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-    err_msg = exception_utf8(codec, e);
+    err_msg = exception_utf8(e);
   }
 }
 
@@ -239,13 +246,14 @@ void sql_internal::execute(const std::string& query) {
     otl_stream os(1, query.c_str(), *db);
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-    err_msg = exception_utf8(codec, e);
+    err_msg = exception_utf8(e);
   }
 }
 void sql_internal::execute_utf8str(const std::string& query,int size, ...) {
     try {
-        wchar_t *out_str = nullptr;
-        size_t out_bytes = 0;
+        
+        char* to = nullptr;
+        size_t to_bytes = 0;
         const struct lmapi_strencode_api* api = lmapi_strencode_capi();
         
         otl_stream os(1, query.c_str(), *db);
@@ -253,14 +261,14 @@ void sql_internal::execute_utf8str(const std::string& query,int size, ...) {
         va_start(va, size);
         for (int i = 0; i < size; ++i) {
             const char* param = va_arg(va, const char*);
-            api->utf8_to_wstr(param, strlen(param) + 1, &out_str, &out_bytes);
-
+            api->utf8_to_wstr(param, strlen(param) + 1, &to, &to_bytes);
+            const wchar_t *out_str = reinterpret_cast<const wchar_t*>(to);
             os << out_str;
         }
         va_end(va);
-        free(out_str);
+        free(to);
     } catch(otl_exception& e){ 
-        err_msg = exception_utf8(codec, e);
+        err_msg = exception_utf8(e);
     }
 }
 
@@ -317,7 +325,7 @@ void sql_internal::select(const std::string& query) {
   } catch (otl_exception& e) {
     // intercept OTL exceptions
     // printf("readvar error\n" );
-    err_msg = exception_utf8(codec, e);
+    err_msg = exception_utf8(e);
   }
 }
 
@@ -326,32 +334,60 @@ void sql_internal::insert(const std::string& query) {
     otl_stream os(1, query.c_str(), *db);
   } catch (otl_exception& e) {
     // intercept OTL exceptions
-    err_msg = exception_utf8(codec, e);
+    err_msg = exception_utf8(e);
   }
 }
 
-/** 特殊函数 */
+/** 特殊insert函数,插入计算结果 */
 void sql_internal::insert(const std::string& format, const std::string& f1,
                           const std::string& f2,
                           const std::vector<lmapi_result_data>& rd) {
-  std::string uf1;
-  std::string uf2;
+  // std::string uf1;
+  // std::string uf2;
+  auto strapi = lmapi_strencode_capi();
+  const char* from = nullptr;
+  char* to = nullptr;
+  size_t from_bytes = 0;
+  size_t to_bytes = 0;
 
-  uf1 = utf8_utf16(sqlstr_codec, f1.c_str());
-  uf2 = utf8_utf16(sqlstr_codec, f2.c_str());
+  SQLWCHAR* uf1 = nullptr;
+  SQLWCHAR* uf2 = nullptr;
+
+  from = f1.c_str();
+  from_bytes = f1.size()+1;
+  to = nullptr;
+  to_bytes = 0;
+  strapi->utf8_to_utf16(from, from_bytes, &to, &to_bytes);
+  uf1 = reinterpret_cast<SQLWCHAR*>(to);
+  
+  from = f2.c_str();
+  from_bytes = f2.size()+1;
+  to = nullptr;
+  to_bytes = 0;
+  strapi->utf8_to_utf16(from, from_bytes, &to, &to_bytes);
+  uf2 = reinterpret_cast<SQLWCHAR*>(to);
+
+  // uf1 = utf8_utf16(sqlstr_codec, f1.c_str());
+  // uf2 = utf8_utf16(sqlstr_codec, f2.c_str());
   try {
       //printf("f1 %s f2 %s %lu\n", f1.c_str(), f2.c_str(), rd.size());
       
     otl_stream os(128, format.c_str(), *db);
     for (const auto& data : rd) {
-      os << reinterpret_cast<const SQLWCHAR*>(uf1.c_str())
-         << reinterpret_cast<const SQLWCHAR*>(uf2.c_str()) << data.date
+      os << uf1
+         << uf2 << data.date
          << data.time << data.value;
     }
   } catch (otl_exception& e) {
     // intercept OTL exceptions
     err_msg = exception_utf8(codec, e);
   }
+
+  // Clean str buffer
+  if(uf1)
+  free(uf1);
+  if(uf2)
+  free(uf2);
 }
 
 static inline int db_lmtype(int dbtype) {

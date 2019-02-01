@@ -109,18 +109,34 @@ inline void console_write(console_internal *con, const char *time_str, int type,
 #endif
 }
 inline void time_string(console_internal *con, std::string &tstr) {
-  std::string format = "%4d-%02d-%02d %02d:%02d:%02d.%07lld";
+  //std::string format = "%4d-%02d-%02d %02d:%02d:%02d.%07lld";
   int64_t now;
-  time_t tnow;
+  
   struct tm stack_pt;
   struct tm *pt = &stack_pt;
-  char buff[32] = {'\0'};
+  char buff[64] = {'\0'};
+
   get_system_time(&now);
-  tnow = now / 10000000;
+  
 #if defined(_MSC_VER)
-  pt = gmtime(&tnow);
+  SYSTEMTIME st_win;
+  FILETIME ft_win;
+  FileTimeToLocalFileTime((LPFILETIME)&now, &ft_win);
+  FileTimeToSystemTime(&ft_win, &st_win);
+  pt->tm_year = st_win.wYear;
+  pt->tm_mon = st_win.wMonth;
+  pt->tm_mday = st_win.wDay;
+  pt->tm_hour = st_win.wHour;
+  pt->tm_min = st_win.wMinute;
+  pt->tm_sec = st_win.wSecond;
+
 #else
+  time_t tnow;
+  tnow = now / 10000000;
+
   gmtime_r(&tnow, pt);
+  pt->tm_year += 1900;
+  pt->tm_mon += 1;
 #endif
 
   if ((con->count % 100) != 1) {
@@ -143,8 +159,8 @@ inline void time_string(console_internal *con, std::string &tstr) {
     }
   } else {
     con->begin_time = now;
-    sprintf(buff, "%4d-%02d-%02d %02d:%02d:%02d.%07lld", pt->tm_year + 1900,
-            pt->tm_mon + 1, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec,
+    sprintf(buff, "%4d-%02d-%02d %02d:%02d:%02d.%07lld", pt->tm_year ,
+            pt->tm_mon, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec,
             now % 10000000);
   }
 

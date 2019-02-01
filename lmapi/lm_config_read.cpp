@@ -23,7 +23,7 @@ struct config_internal {
     strapi = lmapi_strencode_capi();
     char* utf8_name = nullptr;
     size_t bytes = 0;
-    strapi->wstr_to_utf8(name.c_str(),                        /** from str */
+    strapi->wstr_to_utf8(reinterpret_cast<const char*>(name.c_str()),                        /** from str */
                          sizeof(wchar_t) * (name.size() + 1), /** from bytes */
                          &utf8_name,                          /** to str */
                          &bytes);                             /** to bytes */
@@ -241,3 +241,12 @@ std::vector<std::string> config::get_array_string(const std::string& name) {
 }
 
 }  // namespace lmapi
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+#ifdef  __cplusplus
+}
+#endif //  __cplusplus
+

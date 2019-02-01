@@ -109,23 +109,23 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   }
 
   INFO("%ls", L"获取每日总股本数据\n");
-  //  auto query = SQLQUERY(
-  //      "select top 15 TradingDay"
-  //      ",SecuCode"
-  //      ",Ashares"
-  //      " from General.dbo.DailyQuote"
-  //      " where  Flg =1 and "
-  //      " (TradingDay between '2017-01-01' and '2018-12-31');");
-  //  INFO("%ls %d\n", L"股本数据行数", query->rows());
-  //  if (!query->get_error().empty()) {
-  //    ERROR("%s\n", query->get_error().c_str());
-  //  }
-  //  for (int i = 0; i < query->rows(); ++i) {
-  //    for (int j = 0; j < query->cols(); ++j) {
-  //      printf("  %s,", query->get_string(i, j).c_str());
-  //    }
-  //    printf("\n");
-  //  }
+    auto query = SQLQUERY(
+        "select top 15 TradingDay"
+        ",SecuCode"
+        ",Ashares"
+        " from General.dbo.DailyQuote"
+        " where  Flg =1 and "
+        " (TradingDay between '2017-01-01' and '2018-12-31');");
+    INFO("%ls %d\n", L"股本数据行数", query->rows());
+    if (!query->get_error().empty()) {
+      ERROR("%s\n", query->get_error().c_str());
+    }
+    for (int i = 0; i < query->rows(); ++i) {
+      for (int j = 0; j < query->cols(); ++j) {
+        printf("  %s,", query->get_string(i, j).c_str());
+      }
+      printf("\n");
+    }
   //  INFO("%ls", L"计算总市值的60分钟线\n");
   //  ARR_DBL_LIST(MktCap_Min_60);
 

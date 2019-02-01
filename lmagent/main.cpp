@@ -26,6 +26,17 @@ extern int lm_run_file(const char* name);
 
 int main(int argc, char** argv) {
   setlocale(LC_ALL, "");
+
+  //test config lapi
+  //lmapi_config_api* cfg = lmapi_config_open(nullptr, "hello");
+  //printf("cfg ptr:%zu\tget_int%zu\n", reinterpret_cast<size_t>(cfg), reinterpret_cast<size_t>(cfg->get_int));
+  //cfg->get_int("world");
+  //printf("called get_int\n");
+  //lmapi_config_close(cfg);
+  //return 0;
+
+
+  // test kdata pack
   //lmapi::lmkdatas kd;
   //std::cout << kd.size() << std::endl;
 
@@ -53,17 +64,18 @@ int main(int argc, char** argv) {
   //  delete api;
   //  //  return 0;
 
-  //  std::thread t([]() {
-  //    auto encode = lmapi_strencode_capi();
-  //    char* gbk = nullptr;
-  //    char str[] = "hello world\n";
-  //    size_t wstr_len = 0;
-  //    size_t wstr_bytes = 0;
-  //    wstr_len = encode->utf8_to_gbk(str, strlen(str) + 1, &gbk, &wstr_bytes);
+    //// test strencode
+    //std::thread t([]() {
+    //  auto encode = lmapi_strencode_capi();
+    //  char* gbk = nullptr;
+    //  char str[] = "hello world\n";
+    //  size_t wstr_len = 0;
+    //  size_t wstr_bytes = 0;
+    //  wstr_len = encode->utf8_to_gbk(str, strlen(str) + 1, &gbk, &wstr_bytes);
 
-  //    printf("hello world gbk %s size %lu\n", gbk, wstr_len);
-  //  });
-  //  t.join();
+    //  printf("hello world gbk %s size %lu\n", gbk, wstr_len);
+    //});
+    //t.join();
 
   //  auto encode = lmapi_strencode_capi();
   //  char str[] = "hello";

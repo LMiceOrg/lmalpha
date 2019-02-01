@@ -25,12 +25,12 @@ void lmapi_destroy(lmapi_t* api);
 
 /** config read */
 typedef void* lmapi_config_t;
-struct lmapi_config_read {
+struct lmapi_config_api {
   /** value */
   int (*get_int)(const char* name);
   int64_t (*get_int64)(const char* name);
   float (*get_float)(const char* name);
-  double (*get_float64)(const char* name);
+  double (*get_double)(const char* name);
   const char* (*get_string)(const char* name);
 
   /** array */
@@ -40,9 +40,16 @@ struct lmapi_config_read {
   float (*get_array_float)(const char* name, int idx);
   double (*get_array_double)(const char* name, int idx);
   const char* (*get_array_string)(const char* name, int idx);
+
+  /** private data */
+  void* pdata;
 };
-lmapi_config_t* lmapi_config_open(lmapi_t api, const char* cfg_file);
-void lmapi_config_close(lmapi_config_t* cfg);
+
+LIBLMAPI_DLL_EXPORTED
+lmapi_config_t lmapi_config_open(lmapi_t api, const char* cfg_file);
+
+LIBLMAPI_DLL_EXPORTED
+void lmapi_config_close(lmapi_config_t cfg);
 
 /** console logging */
 enum lmapi_console_type {

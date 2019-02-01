@@ -161,120 +161,6 @@ static inline void str_encode(iconv_t ic, const From& from, To* to) {
   }
 }
 
-struct strencode_internal {
-  iconv_t utf8_wstr;
-  iconv_t utf8_gbk;
-  iconv_t wstr_utf8;
-  iconv_t wstr_gbk;
-  iconv_t gbk_wstr;
-  iconv_t gbk_utf8;
-
-  strencode_internal(void) {
-    // iconv_t err = reinterpret_cast<iconv_t>(-1);
-    const char utf8[] = LMAPI_UTF8_TYPE;
-    const char gbk[] = LMAPI_GBK_TYPE;
-    const char wstr[] = LMAPI_WCHAR_TYPE;
-
-    utf8_wstr = iconv_open(utf8, wstr);
-    utf8_gbk = iconv_open(utf8, gbk);
-
-    wstr_utf8 = iconv_open(wstr, utf8);
-    wstr_gbk = iconv_open(wstr, gbk);
-
-    gbk_wstr = iconv_open(gbk, wstr);
-    gbk_utf8 = iconv_open(gbk, utf8);
-  }
-
-  ~strencode_internal() {
-    iconv_close(utf8_wstr);
-    iconv_close(utf8_gbk);
-
-    iconv_close(wstr_utf8);
-    iconv_close(wstr_gbk);
-
-    iconv_close(gbk_wstr);
-    iconv_close(gbk_utf8);
-  }
-
-  int utf8_to_wstr(const char* from, wchar_t* to, size_t to_bytes) {
-    std::string sfrom = from;
-    std::wstring sto;
-    str_encode(utf8_wstr, sfrom, &sto);
-
-    size_t to_len = sto.size() * sizeof(wchar_t);
-    if (to_bytes == 0 || to == NULL) {
-      return to_len;
-    } else if (to_len <= to_bytes) {
-      memcpy(reinterpret_cast<char*>(to), sto.c_str(), to_len);
-    }
-    return to_len;
-  }
-};
-
-strencode::strencode(void) {
-  strencode_internal* si = new strencode_internal();
-  pdata = si;
-}
-
-std::wstring strencode::utf8_to_wstr(const std::string& from) {
-  std::wstring to;
-
-  strencode_internal* si;
-
-  si = reinterpret_cast<strencode_internal*>(pdata);
-  str_encode(si->utf8_wstr, from, &to);
-
-  return to;
-}
-
-std::string strencode::utf8_to_gbk(const std::string& from) {
-  std::string to;
-  strencode_internal* si;
-
-  si = reinterpret_cast<strencode_internal*>(pdata);
-  str_encode(si->utf8_gbk, from, &to);
-
-  return to;
-}
-
-std::string strencode::wstr_to_utf8(const std::wstring& from) {
-  std::string to;
-  strencode_internal* si;
-
-  si = reinterpret_cast<strencode_internal*>(pdata);
-  str_encode(si->wstr_utf8, from, &to);
-
-  return to;
-}
-std::string strencode::wstr_to_gbk(const std::wstring& from) {
-  std::string to;
-  strencode_internal* si;
-
-  si = reinterpret_cast<strencode_internal*>(pdata);
-  str_encode(si->wstr_gbk, from, &to);
-
-  return to;
-}
-
-std::string strencode::gbk_to_utf8(const std::string& from) {
-  std::string to;
-  strencode_internal* si;
-
-  si = reinterpret_cast<strencode_internal*>(pdata);
-  str_encode(si->gbk_utf8, from, &to);
-
-  return to;
-}
-std::wstring strencode::gbk_to_wstr(const std::string& from) {
-  std::wstring to;
-  strencode_internal* si;
-
-  si = reinterpret_cast<strencode_internal*>(pdata);
-  str_encode(si->gbk_wstr, from, &to);
-
-  return to;
-}
-
 }  // namespace lmapi
 
 /** 线程本地存储: 字符转换状态 */
@@ -287,6 +173,12 @@ class lmapi_tls_icodes {
     tls_ic[3] = iconv_open(LMAPI_GBK_TYPE, LMAPI_WCHAR_TYPE);
     tls_ic[4] = iconv_open(LMAPI_WCHAR_TYPE, LMAPI_GBK_TYPE);
     tls_ic[5] = iconv_open(LMAPI_UTF8_TYPE, LMAPI_GBK_TYPE);
+#if defined(__linux__) || defined(__APPLE__)
+    tls_ic[6] = iconv_open(LMAPI_UTF16LE_TYPE, LMAPI_UTF8_TYPE);
+    tls_ic[7] = iconv_open(LMAPI_UTF8_TYPE, LMAPI_UTF16LE_TYPE);
+    tls_ic[8] = iconv_open(LMAPI_UTF16LE_TYPE, LMAPI_WCHAR_TYPE);
+    tls_ic[9] = iconv_open(LMAPI_WCHAR_TYPE, LMAPI_UTF16LE_TYPE);
+#endif // defined(__linux__) || defined(__APPLE__)
     //printf("thread init tls icodes\n");
   }
   ~lmapi_tls_icodes() {
@@ -298,13 +190,18 @@ class lmapi_tls_icodes {
   inline iconv_t operator[](size_t pos) const { return tls_ic[pos]; }
 
  private:
-  iconv_t tls_ic[6];
+#if defined(__linux__) || defined(__APPLE__)
+     iconv_t tls_ic[10];
+#else
+     iconv_t tls_ic[6];
+#endif // defined(__linux__) || defined(__APPLE__)
+  
 };
 //__thread iconv_t lmapi_tls_ic[6];
 static thread_local lmapi_tls_icodes lmapi_tls_ic;
 
 static size_t lmapi_utf8_to_wstr(const char* from, size_t from_bytes,
-                                 wchar_t** to, size_t* to_bytes) {
+                                 char** to, size_t* to_bytes) {
   char** c_to = reinterpret_cast<char**>(to);
   lmapi::str_encode_c(lmapi_tls_ic[0], from, from_bytes, c_to, to_bytes);
 
@@ -319,14 +216,14 @@ static size_t lmapi_utf8_to_gbk(const char* from, size_t from_bytes, char** to,
   return *to_bytes / sizeof(char);
 }
 
-static size_t lmapi_wstr_to_utf8(const wchar_t* from, size_t from_bytes,
+static size_t lmapi_wstr_to_utf8(const char* from, size_t from_bytes,
                                  char** to, size_t* to_bytes) {
   char** c_to = reinterpret_cast<char**>(to);
   lmapi::str_encode_c(lmapi_tls_ic[2], from, from_bytes, c_to, to_bytes);
 
   return *to_bytes / sizeof(char);
 }
-static size_t lmapi_wstr_to_gbk(const wchar_t* from, size_t from_bytes,
+static size_t lmapi_wstr_to_gbk(const char* from, size_t from_bytes,
                                 char** to, size_t* to_bytes) {
   char** c_to = reinterpret_cast<char**>(to);
   lmapi::str_encode_c(lmapi_tls_ic[3], from, from_bytes, c_to, to_bytes);
@@ -335,7 +232,7 @@ static size_t lmapi_wstr_to_gbk(const wchar_t* from, size_t from_bytes,
 }
 
 static size_t lmapi_gbk_to_wstr(const char* from, size_t from_bytes,
-                                wchar_t** to, size_t* to_bytes) {
+                                char** to, size_t* to_bytes) {
   char** c_to = reinterpret_cast<char**>(to);
 
   lmapi::str_encode_c(lmapi_tls_ic[4], from, from_bytes, c_to, to_bytes);
@@ -352,10 +249,72 @@ static size_t lmapi_gbk_to_utf8(const char* from, size_t from_bytes, char** to,
   return *to_bytes / sizeof(char);
 }
 
-/** 全局静态变量 lmapi_strencode_c_api,  Low Level API 字符转换函数指针结构体 */
+static size_t lmapi_utf8_to_utf16
+(const char* from, size_t from_bytes,
+    char** to, size_t* to_bytes) {
+#if defined(__linux__) || defined(__APPLE__)
+    lmapi::str_encode_c(lmapi_tls_ic[6], from, from_bytes, to, to_bytes);
+#else 
+    lmapi::str_encode_c(lmapi_tls_ic[0], from, from_bytes, to, to_bytes);
+#endif // defined(__linux__) || defined(__APPLE__)   
+
+    return (*to_bytes) / sizeof(unsigned short);
+}
+
+size_t lmapi_utf16_to_utf8
+(const char* from, size_t from_bytes,
+    char** to, size_t* to_bytes) {
+#if defined(__linux__) || defined(__APPLE__)
+    lmapi::str_encode_c(lmapi_tls_ic[7], from, from_bytes, to, to_bytes);
+#else 
+    lmapi::str_encode_c(lmapi_tls_ic[2], from, from_bytes, to, to_bytes);
+#endif // defined(__linux__) || defined(__APPLE__)  
+    return (*to_bytes) / sizeof(char);
+}
+
+size_t lmapi_wchar_to_utf16 /* return utf16le length */
+(const char* from, size_t from_bytes, /* from wchar, bytes */
+    char** to, size_t* to_bytes) /* to utf16, bytes */
+{
+#if defined(__linux__) || defined(__APPLE__)
+    lmapi::str_encode_c(lmapi_tls_ic[8], from, from_bytes, to, to_bytes);
+#elif defined(_WIN32)
+    if(*to_bytes<from_bytes)
+        *to = reinterpret_cast<char*>(realloc(*to, from_bytes));
+    *to_bytes = from_bytes;
+    memcpy(*to, from, from_bytes);
+#endif
+    return (*to_bytes) / sizeof(unsigned short);
+
+}
+
+size_t lmapi_utf16_to_wchar /* return wchar length */
+(const char* from, size_t from_bytes, /* from utf16le, bytes */
+    char** to, size_t* to_bytes) /* to wchar, bytes */
+{
+#if defined(__linux__) || defined(__APPLE__)
+    lmapi::str_encode_c(lmapi_tls_ic[9], from, from_bytes, to, to_bytes);
+#elif defined(_WIN32)
+    if (*to_bytes<from_bytes)
+        *to = reinterpret_cast<char*>(realloc(*to, from_bytes));
+    *to_bytes = from_bytes;
+    memcpy(*to, from, from_bytes);
+#endif
+    return (*to_bytes) / sizeof(unsigned short);
+}
+
+/**  Low Level API 字符转换函数指针结构体 */
 static struct lmapi_strencode_api lmapi_strencode_c_api {
-  lmapi_utf8_to_wstr, lmapi_utf8_to_gbk, lmapi_wstr_to_utf8, lmapi_wstr_to_gbk,
-      lmapi_gbk_to_wstr, lmapi_gbk_to_utf8
+  lmapi_utf8_to_wstr, /** convert utf8 string to wchar_t string */
+      lmapi_utf8_to_gbk, /** convert utf8 string to gbk string */
+      lmapi_wstr_to_utf8, /** convert wchar_t string to utf8 string */
+      lmapi_wstr_to_gbk, /** convert wchar_t string to gbk string */
+      lmapi_gbk_to_wstr, /** convert gbk string to wchar_t string */
+      lmapi_gbk_to_utf8, /** convert gbk string to utf8 string */
+      lmapi_utf8_to_utf16, /** convert utf8 string to utf16 string */
+      lmapi_utf16_to_utf8, /** convert utf16 string to utf8 string */
+      lmapi_wchar_to_utf16,
+      lmapi_utf16_to_wchar
 };
 
 /** 返回 字符转换函数指针结构体 */
