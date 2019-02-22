@@ -68,17 +68,26 @@ factor_result::factor_result(const std::string& conns,
         "author varchar(32),"
         "last_update varchar(32)"
         ")");
+    sql->err_msg.clear();
   }
-  if (exists_result == 0) {
-    sql->execute(
-        "create table alpha.dbo.factor_result("
+  {
+      // 3. drop existing table factor result
+      memset(query, 0, sizeof(query));
+      snprintf(query, sizeof(query), "drop table alpha.dbo.factor_result_%s",
+          factor.c_str());
+      sql->execute(query);
+      sql->err_msg.clear();
+
+      memset(query, 0, sizeof(query));
+      snprintf(query, sizeof(query), "create table alpha.dbo.factor_result_%s("
         "id bigint primary key identity,"
         "name varchar(32) not null,"
         "code varchar(32) not null,"
         "date int,"
         "time int,"
         "value float"
-        ")");
+          ")", factor.c_str());
+    sql->execute(query);
   }
 }
 
@@ -137,9 +146,6 @@ int factor_result::store_factor(const lmapi_result_info& info) {
     
   }
 
-  sql->execute_utf8str("delete from alpha.dbo.factor_result where "
-      "name=:name<char[32],in>", 1, factor.c_str());
-
   if (!sql->err_msg.empty())
     return 1;
   else
@@ -166,8 +172,7 @@ int factor_result::store_result(const std::string& name, const std::string code,
       "date int,"
       "time int,"
       "value float)");
-  if (sql->err_msg.size() != 0)
-      return 1;
+  if (sql->err_msg.size() != 0) return 1;
 
   //  3. insert temp result
   sql->insert(
@@ -181,10 +186,14 @@ int factor_result::store_result(const std::string& name, const std::string code,
   if (sql->err_msg.size() != 0) return 1;
 
   //  4. insert into factor_result
-  sql->execute("insert into alpha.dbo.factor_result " 
+  memset(query, 0, sizeof(query));
+  snprintf(query, sizeof(query),
+      "insert into alpha.dbo.factor_result_%s "
       "(name,code,date,time, value) "
       "select nc.name, nc.code, nc.date, nc.time, nc.value "
-      "from #temp_result as nc");
+      "from #temp_result as nc", factor.c_str());
+
+  sql->execute(query);
   if (sql->err_msg.size() != 0) return 1;
 
   //  5. drop temp table
