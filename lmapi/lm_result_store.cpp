@@ -137,6 +137,9 @@ int factor_result::store_factor(const lmapi_result_info& info) {
     
   }
 
+  sql->execute_utf8str("delete from alpha.dbo.factor_result where "
+      "name=:name<char[32],in>", 1, factor.c_str());
+
   if (!sql->err_msg.empty())
     return 1;
   else
@@ -153,41 +156,44 @@ int factor_result::store_result(const std::string& name, const std::string code,
 
   sql = reinterpret_cast<sql_internal*>(pdata);
 
-  //  1. check factor result exists
- /* memset(query, 0, sizeof(query));
-  snprintf(query, sizeof(query),
-           "select top 1 name from alpha.dbo.factor_result where "
-           "name='%s' and code='%s'",
-           name.c_str(), code.c_str());
-  sql->select(query);
-  exists = sql->row_count;*/
+  //  1. drop temp table
+  sql->execute("drop table #temp_result");
+  sql->err_msg.clear();
 
-  //  2. delete existing result
-   {
-    memset(query, 0, sizeof(query));
-    snprintf(query, sizeof(query),
-        "delete from alpha.dbo.factor_result where "
-        "name=:name<char[32],in> and code=:code<char[32],in>");
-    sql->execute_utf8str(query, 2,
-             name.c_str(), code.c_str());
-    
-  }
+  //  2. create temp table
+  sql->execute("create table #temp_result (name varchar(32),"
+      "code varchar(32),"
+      "date int,"
+      "time int,"
+      "value float)");
+  if (sql->err_msg.size() != 0)
+      return 1;
 
-  //  3. insert factor result
+  //  3. insert temp result
   sql->insert(
-      " insert into alpha.dbo.factor_result "
+      " insert into #temp_result "
       "values(:name<char[32],in>,"
       ":code<char[32],in>,"
       ":f3<int,in>,"
       ":f4<int,in>,"
       ":f5<double,in>)",
       name, code, dataset);
+  if (sql->err_msg.size() != 0) return 1;
+
+  //  4. insert into factor_result
+  sql->execute("insert into alpha.dbo.factor_result " 
+      "(name,code,date,time, value) "
+      "select nc.name, nc.code, nc.date, nc.time, nc.value "
+      "from #temp_result as nc");
+  if (sql->err_msg.size() != 0) return 1;
+
+  //  5. drop temp table
+  sql->execute("drop table #temp_result");
+  sql->err_msg.clear();
 
   printf("  store %s result %lu\n", code.c_str(), dataset.size());
-  if (sql->err_msg.size() != 0)
-    return 1;
-  else
-    return 0;
+
+  return 0;
 }
 
 int factor_result::store(
@@ -213,6 +219,8 @@ int factor_result::store(
     sql->err_msg.clear();
     return ret;
   }
+
+  
 
   printf("2. store factor result\n");
   // 2. store result
