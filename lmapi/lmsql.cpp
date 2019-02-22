@@ -250,7 +250,6 @@ void sql_internal::execute(const std::string& query) {
   }
 }
 void sql_internal::execute_utf8str(const std::string& query,int size, ...) {
-    std::string extra_msg;
     try {
         
         char* to = nullptr;
@@ -267,14 +266,12 @@ void sql_internal::execute_utf8str(const std::string& query,int size, ...) {
             const wchar_t *out_str = reinterpret_cast<const wchar_t*>(to);
             os << out_str;
 
-            extra_msg += param;
-            extra_msg += "|";
         }
         va_end(va);
         free(to);
 
     } catch(otl_exception& e){ 
-        err_msg = exception_utf8(e) + extra_msg;
+        err_msg = exception_utf8(e);
     }
 }
 
@@ -378,7 +375,7 @@ void sql_internal::insert(const std::string& format, const std::string& f1,
   try {
       //printf("f1 %s f2 %s %lu\n", f1.c_str(), f2.c_str(), rd.size());
       
-    otl_stream os(32768, format.c_str(), *db);
+    otl_stream os(65536, format.c_str(), *db);
     for (const auto& data : rd) {
       os << uf1
          << uf2 << data.date

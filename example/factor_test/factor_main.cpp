@@ -132,7 +132,63 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   DEBUG("%ls", L"3. 数据清洗\n");
   DEBUG("%ls", L"4. 因子计算\n");
 
+  /** performance test only 
+    stocks
+    1 year (250 days)
+    kmin1 4 hours (60 minutes)
+  */
+  {
+      std::minstd_rand r;
+      r.seed(1234);
+
+      char buffer[32];
+
+      stock_kmin1.clear();
+      stock_list.clear();
+      time_t now;
+      time(&now);
+      tm date;
+
+      size_t timebegin_minute = 9 * 60+30;
+      size_t stock_count = 200;
+      
+
+      // stock_count 股票名称 k线数据
+      for (size_t i = 0; i < stock_count; ++i) {
+          std::string name = itoa(600000 + i, buffer, 10);
+          stock_list.push_back(name);
+
+          std::vector<lmkdata> kdatas;
+          for (size_t day = 0; day < 250; ++day) {
+              for (size_t minute = 0; minute < 60 * 4; ++minute) {
+                  time_t cur =now + 86400 * day;
+                  _gmtime64_s(&date, &cur);
+                  size_t timeminute = timebegin_minute + minute;
+                  lmkdata dt;
+                  dt.volume = 120000;
+                  dt.preClosePrice = (12.75*r())/ 2147483647;
+                  dt.openPrice = (12.35*r()) / 2147483647;
+                  dt.closePrice = (12.75*r()) / 2147483647;
+                  dt.dealCount = 10000;
+                  dt.highPrice = (13.35*r()) / 2147483647;
+                  dt.lowPrice = (12.25*r()) / 2147483647;
+                  dt.money = 126500;
+                  dt.nCode = 600000 + i;
+                  dt.nDate = date.tm_year*10000 + date.tm_mon*100+date.tm_mday;
+                  dt.nTimeBegin = (timeminute / 60) * 10000 + (timeminute % 60) * 100;
+                  dt.nType = KMIN1;
+                  kdatas.push_back(dt);
+                  
+              }
+          }
+          stock_kmin1.push_back(kdatas);
+
+      }
+  }
+
   PREPARE_RESULT(result_list, stock_list);
+
+  printf("stock list %ld %ld %ld\n", stock_list.size(), result_list.size(), stock_kmin1.size());
 
   /** 定义求解函数 */
   auto factor_solver = [&](size_t count,     /** 回归序列长度 */
@@ -156,6 +212,7 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
       auto const &stock = stock_list[i];
       auto const &stock_kdata = stock_kmin1[i];
       auto &result_dataset = result_list[i];
+      // printf("stock kdata size %ld\n", stock_kdata.size());
       if (stock_kdata.size() < count) continue;
       // INFO(" %ls code: %s\n", L"计算 百分比变动", stock.c_str());
       // std::remove_reference<decltype(stock_kdata)>::type::const_iterator bar;
