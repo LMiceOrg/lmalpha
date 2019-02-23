@@ -1,31 +1,31 @@
 @startuml
 skinparam componentStyle uml2
 
-rectangle "å› å­è®¡ç®—ç¨‹åº" <<åˆå§‹åŒ–å› å­åº“API>> {
-interface "æ—¥å¿—è¾“å‡º" as log
-interface "é…ç½®æ–‡ä»¶è¯»å–" as cfg
-interface "æ—¶é—´åºåˆ—æ•°æ®è®¿é—®" as serial
-interface "SQLæ•°æ®åº“æŸ¥è¯¢" as sql
-interface "è®¡ç®—ç»“æœå­˜å‚¨" as result
+rectangle "Òò×Ó¼ÆËã³ÌĞò" <<³õÊ¼»¯Òò×Ó¿âAPI>> {
+interface "ÈÕÖ¾Êä³ö" as log
+interface "ÅäÖÃÎÄ¼ş¶ÁÈ¡" as cfg
+interface "Ê±¼äĞòÁĞÊı¾İ·ÃÎÊ" as serial
+interface "SQLÊı¾İ¿â²éÑ¯" as sql
+interface "¼ÆËã½á¹û´æ´¢" as result
 }
 
-rectangle "å› å­åº“" {
-[æ§åˆ¶å°æ—¥å¿—ç»„ä»¶] as log_api
-[é…ç½®æ–‡ä»¶ç»„ä»¶] as cfg_api
-[æ—¶é—´åºåˆ—æ•°æ®ç»„ä»¶] as serial_api
-[SQLæ•°æ®åº“è®¿é—®ç»„ä»¶] as sql_api
-[è®¡ç®—ç»“æœå­˜å‚¨ç»„ä»¶] as result_api
+rectangle "Òò×Ó¿â" {
+[¿ØÖÆÌ¨ÈÕÖ¾×é¼ş] as log_api
+[ÅäÖÃÎÄ¼ş×é¼ş] as cfg_api
+[Ê±¼äĞòÁĞÊı¾İ×é¼ş] as serial_api
+[SQLÊı¾İ¿â·ÃÎÊ×é¼ş] as sql_api
+[¼ÆËã½á¹û´æ´¢×é¼ş] as result_api
 
 }
 
-serial <.. serial_api: Kçº¿ã€Tickåºåˆ—
+serial <.. serial_api: KÏß¡¢TickĞòÁĞ
 
-log <.. log_api: è¾“å‡ºå½©è‰²æ—¥å¿—
+log <.. log_api: Êä³ö²ÊÉ«ÈÕÖ¾
 
-cfg <.. cfg_api: é…ç½®å‚æ•°
+cfg <.. cfg_api: ÅäÖÃ²ÎÊı
 
-sql <.. sql_api: æ•°æ®é›†
+sql <.. sql_api: Êı¾İ¼¯
 
-result <.. result_api: å­˜å‚¨å› å­
+result <.. result_api: ´æ´¢Òò×Ó
 
 @enduml

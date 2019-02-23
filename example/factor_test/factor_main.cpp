@@ -109,86 +109,84 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   }
 
   INFO("%ls", L"获取每日总股本数据\n");
-    auto query = SQLQUERY(
-        "select top 15 TradingDay"
-        ",SecuCode"
-        ",Ashares"
-        " from General.dbo.DailyQuote"
-        " where  Flg =1 and "
-        " (TradingDay between '2017-01-01' and '2018-12-31');");
-    INFO("%ls %d\n", L"股本数据行数", query->rows());
-    if (!query->get_error().empty()) {
-      ERROR("%s\n", query->get_error().c_str());
+  auto query = SQLQUERY(
+      "select top 15 TradingDay"
+      ",SecuCode"
+      ",Ashares"
+      " from General.dbo.DailyQuote"
+      " where  Flg =1 and "
+      " (TradingDay between '2017-01-01' and '2018-12-31');");
+  INFO("%ls %d\n", L"股本数据行数", query->rows());
+  if (!query->get_error().empty()) {
+    ERROR("%s\n", query->get_error().c_str());
+  }
+  for (int i = 0; i < query->rows(); ++i) {
+    for (int j = 0; j < query->cols(); ++j) {
+      printf("  %s,", query->get_string(i, j).c_str());
     }
-    for (int i = 0; i < query->rows(); ++i) {
-      for (int j = 0; j < query->cols(); ++j) {
-        printf("  %s,", query->get_string(i, j).c_str());
-      }
-      printf("\n");
-    }
+    printf("\n");
+  }
   //  INFO("%ls", L"计算总市值的60分钟线\n");
   //  ARR_DBL_LIST(MktCap_Min_60);
 
   DEBUG("%ls", L"3. 数据清洗\n");
   DEBUG("%ls", L"4. 因子计算\n");
 
-  /** performance test only 
+  /** performance test only
     stocks
     1 year (250 days)
     kmin1 4 hours (60 minutes)
   */
   {
-      std::minstd_rand r;
-      r.seed(1234);
+    std::minstd_rand r;
+    r.seed(1234);
 
-      char buffer[32];
+    char buffer[32];
 
-      stock_kmin1.clear();
-      stock_list.clear();
-      time_t now;
-      time(&now);
-      tm date;
+    stock_kmin1.clear();
+    stock_list.clear();
+    time_t now;
+    time(&now);
+    tm date;
 
-      size_t timebegin_minute = 9 * 60+30;
-      size_t stock_count = 200;
-      
+    size_t timebegin_minute = 9 * 60 + 30;
+    size_t stock_count = 200;
 
-      // stock_count 股票名称 k线数据
-      for (size_t i = 0; i < stock_count; ++i) {
-          std::string name = itoa(600000 + i, buffer, 10);
-          stock_list.push_back(name);
+    // stock_count 股票名称 k线数据
+    for (size_t i = 0; i < stock_count; ++i) {
+      std::string name = itoa(600000 + i, buffer, 10);
+      stock_list.push_back(name);
 
-          std::vector<lmkdata> kdatas;
-          for (size_t day = 0; day < 250; ++day) {
-              for (size_t minute = 0; minute < 60 * 4; ++minute) {
-                  time_t cur =now + 86400 * day;
-                  _gmtime64_s(&date, &cur);
-                  size_t timeminute = timebegin_minute + minute;
-                  lmkdata dt;
-                  dt.volume = 120000;
-                  dt.preClosePrice = (12.75*r())/ 2147483647;
-                  dt.openPrice = (12.35*r()) / 2147483647;
-                  dt.closePrice = (12.75*r()) / 2147483647;
-                  dt.dealCount = 10000;
-                  dt.highPrice = (13.35*r()) / 2147483647;
-                  dt.lowPrice = (12.25*r()) / 2147483647;
-                  dt.money = 126500;
-                  dt.nCode = 600000 + i;
-                  dt.nDate = date.tm_year*10000 + date.tm_mon*100+date.tm_mday;
-                  dt.nTimeBegin = (timeminute / 60) * 10000 + (timeminute % 60) * 100;
-                  dt.nType = KMIN1;
-                  kdatas.push_back(dt);
-                  
-              }
-          }
-          stock_kmin1.push_back(kdatas);
-
+      std::vector<lmkdata> kdatas;
+      for (size_t day = 0; day < 250; ++day) {
+        for (size_t minute = 0; minute < 60 * 4; ++minute) {
+          time_t cur = now + 86400 * day;
+          _gmtime64_s(&date, &cur);
+          size_t timeminute = timebegin_minute + minute;
+          lmkdata dt;
+          dt.volume = 120000;
+          dt.preClosePrice = (12.75 * r()) / 2147483647;
+          dt.openPrice = (12.35 * r()) / 2147483647;
+          dt.closePrice = (12.75 * r()) / 2147483647;
+          dt.dealCount = 10000;
+          dt.highPrice = (13.35 * r()) / 2147483647;
+          dt.lowPrice = (12.25 * r()) / 2147483647;
+          dt.money = 126500;
+          dt.nCode = 600000 + i;
+          dt.nDate = date.tm_year * 10000 + date.tm_mon * 100 + date.tm_mday;
+          dt.nTimeBegin = (timeminute / 60) * 10000 + (timeminute % 60) * 100;
+          dt.nType = KMIN1;
+          kdatas.push_back(dt);
+        }
       }
+      stock_kmin1.push_back(kdatas);
+    }
   }
 
   PREPARE_RESULT(result_list, stock_list);
 
-  printf("stock list %ld %ld %ld\n", stock_list.size(), result_list.size(), stock_kmin1.size());
+  printf("stock list %ld %ld %ld\n", stock_list.size(), result_list.size(),
+         stock_kmin1.size());
 
   /** 定义求解函数 */
   auto factor_solver = [&](size_t count,     /** 回归序列长度 */
@@ -219,8 +217,8 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
       // std::decay<decltype(stock_kdata)>::type::const_iterator bar;
       // for (size_t j = 0; j < 1500; ++j)
       size_t result_idx = 0;
-      for(size_t bar_pos = count; bar_pos <= stock_kdata.size(); ++bar_pos, ++result_idx)
-       {                                /** 步长 1 */
+      for (size_t bar_pos = count; bar_pos <= stock_kdata.size();
+           ++bar_pos, ++result_idx) { /** 步长 1 */
         auto bar_step_begin = stock_kdata.begin() + bar_pos - count;
         auto bar_step_end = stock_kdata.begin() + bar_pos;
 
@@ -251,25 +249,23 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
         result.date = bar_step_begin->nDate;
         result.time = bar_step_begin->nTimeBegin;
         result.value = isnormal(rsq) ? rsq : (rsq == 0 ? 0 : 1);
-        
+
         // result_dataset.push_back(result);
 
-        // printf("\tresult dt %d%d %lf\n",result.date, result.time, result.value);
+        // printf("\tresult dt %d%d %lf\n",result.date, result.time,
+        // result.value);
 
       }  // for-end: bar_pos
-    }  // for-end:i
+    }    // for-end:i
   };
 
   auto clear_result = [&result_list, &stock_kmin1](size_t count) -> void {
     for (size_t i = 0; i < result_list.size(); ++i) {
-        if (stock_kmin1[i].size() < count) {
-            result_list[i].resize(0);
-        } 
-        else
-        {
-            result_list[i].resize(stock_kmin1[i].size() - count + 1);
-        }
-      
+      if (stock_kmin1[i].size() < count) {
+        result_list[i].resize(0);
+      } else {
+        result_list[i].resize(stock_kmin1[i].size() - count + 1);
+      }
     }
   };
 
@@ -291,32 +287,36 @@ LMAPI_EXPORT void factor_run(const char *cfg_name) {
   CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
 
   // 第2次 调用计算 步长50
-  //tstart = TIMENOW();
-  //step_count = 50;
-  //clear_result(step_count);
-  //for (size_t i = 0; i < thread_size; ++i) {
-  //  tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  // tstart = TIMENOW();
+  // step_count = 50;
+  // clear_result(step_count);
+  // for (size_t i = 0; i < thread_size; ++i) {
+  //  tasks[i].reset(new std::thread(factor_solver, step_count, i,
+  //  thread_size));
   //}
-  //for (size_t i = 0; i < thread_size; ++i) {
+  // for (size_t i = 0; i < thread_size; ++i) {
   //  tasks[i]->join();
   //}
-  //tend = TIMENOW();
-  //elapsed_seconds = DURATION(tstart, tend);
-  //CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+  // tend = TIMENOW();
+  // elapsed_seconds = DURATION(tstart, tend);
+  // CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count,
+  // elapsed_seconds);
 
   // 第3次 调用计算 步长50
-  //tstart = TIMENOW();
-  //step_count = 100;
-  //clear_result(step_count);
-  //for (size_t i = 0; i < thread_size; ++i) {
-  //  tasks[i].reset(new std::thread(factor_solver, step_count, i, thread_size));
+  // tstart = TIMENOW();
+  // step_count = 100;
+  // clear_result(step_count);
+  // for (size_t i = 0; i < thread_size; ++i) {
+  //  tasks[i].reset(new std::thread(factor_solver, step_count, i,
+  //  thread_size));
   //}
-  //for (size_t i = 0; i < thread_size; ++i) {
+  // for (size_t i = 0; i < thread_size; ++i) {
   //  tasks[i]->join();
   //}
-  //tend = TIMENOW();
-  //elapsed_seconds = DURATION(tstart, tend);
-  //CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count, elapsed_seconds);
+  // tend = TIMENOW();
+  // elapsed_seconds = DURATION(tstart, tend);
+  // CRITICAL("\t%ls[%lu]  %lf\n", L"因子计算时间", step_count,
+  // elapsed_seconds);
 
   DEBUG("%ls", L"5. 结果存储\n");
 
