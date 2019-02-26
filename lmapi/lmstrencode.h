@@ -1,4 +1,4 @@
-#ifndef LMAPI_LMSTRENCODE_H_
+ï»¿#ifndef LMAPI_LMSTRENCODE_H_
 #define LMAPI_LMSTRENCODE_H_
 
 /** Copyright 2018, 2019 He Hao<hehaoslj@sina.com> */
@@ -12,7 +12,7 @@ extern "C" {
 
     /** C only - Low Level API */
 
-     /* ×Ö·û×ª»» LLAPI */
+     /* å­—ç¬¦è½¬æ¢ LLAPI */
     struct lmapi_strencode_api {
         size_t(*utf8_to_wstr)                     /* return wchar length */
             (const char* from, size_t from_bytes, /* from utf8, bytes */
@@ -55,7 +55,7 @@ extern "C" {
                 char** to, size_t* to_bytes); /* to wchar, bytes */
     };
 
-    /* »ñÈ¡×Ö·û×ª»»API */
+    /* è·å–å­—ç¬¦è½¬æ¢API */
     const struct lmapi_strencode_api* lmapi_strencode_capi(void);
 
 #ifdef __cplusplus

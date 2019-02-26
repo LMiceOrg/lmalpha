@@ -108,6 +108,14 @@
     p->store(stock_list, result_list);                                       \
   }(name, stocks, results)
 
+#define FACTOR_RESULT_DISK(name_, stocks_, results_) \
+ [_s_api](const std::string &name,                                          \
+           const std::vector<std::string> &stock_list,                       \
+           const std::vector<std::vector<lmapi_result_data>> &result_list) { \
+    std::shared_ptr<lmapi::factor_result> p(_s_api->result_open(name));      \
+    p->store_disk(stock_list, result_list);                                       \
+}(name_, stocks_, results_)
+
 /** 辅助函数库 */
 extern "C" int lmlm(const double *y_val, const double *x_val, int y_size,
                     int x_size, double *rsqured);
